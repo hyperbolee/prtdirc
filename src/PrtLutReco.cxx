@@ -85,6 +85,8 @@ PrtLutReco::~PrtLutReco(){
  
 //-------------- Loop over tracks ------------------------------------------
 void PrtLutReco::Run(Int_t start, Int_t end){
+  cout << "Start Reco run" << endl;
+
   TVector3 dird, dir, momInBar(0,0,1),posInBar,cz;
   Double_t cangle,spr,tangle,boxPhi,weight,evtime,bartime, lenz,dirz,luttheta, barHitTime, hitTime;
   Int_t pdgcode, evpointcount=0;
@@ -132,7 +134,9 @@ void PrtLutReco::Run(Int_t start, Int_t end){
     loopoverall=true;
     start=0;
   }
-  
+  cout << "Start event loop" << endl;
+  cout << "start\t" << start << endl;
+  cout << "nEvents\t" << nEvents << endl;
   for (Int_t ievent=start; ievent<nEvents; ievent++){ //&& ievent<end
     fChain->GetEntry(ievent);
     nHits = fEvent->GetHitSize();
@@ -150,8 +154,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
     }
     
     //if(fEvent->GetParticle()!=211) continue;
-    if(fEvent->GetParticle()!=2212) continue;
-
+    //if(fEvent->GetParticle()!=2212) continue;
     // if( fEvent->GetType()==0){
     //   if( fEvent->GetParticle()==2212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.90 || fEvent->GetTest1()>176) ) continue;
     //   if( fEvent->GetParticle()==212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.10 ||  fEvent->GetTest1()>175.2) ) continue;
@@ -241,11 +244,14 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	  fHist2->Fill(bartime+evtime);
 
 	  //  if(hitTime>15) test1=3;
+	  //cout << "bartime\t" << bartime << endl;
+	  //cout << "enttime\t" << evtime  << endl;
+	  //cout << "test1\t" << test1 << endl;
 	  if(fabs((bartime+evtime)-hitTime)>test1) continue;
 	  fHist3->Fill(fabs((bartime+evtime)),hitTime);
 	  tangle = momInBar.Angle(dir);	  
 	  //if(tangle>TMath::PiOver2()) tangle = TMath::Pi()-tangle;
-	  
+	  //cout << "RECONSTRUCTED ANGLE\t" << tangle << endl;
 	  if(tangle > minChangle && tangle < maxChangle){
 	    fHist->Fill(tangle ,weight);
 	    if(0.7<tangle && tangle<0.9) isGoodHit=true;
@@ -267,6 +273,9 @@ void PrtLutReco::Run(Int_t start, Int_t end){
       if(isGoodHit) nsHits++; 	
     }
 
+    //cout << "nsHits\t" << nsHits << endl;
+    //cout << "nsEvents\t" << nsEvents << endl;
+    //cout << "nph\t" << (Double_t)nsHits/(Double_t)nsEvents << endl;
     if(++nsEvents>=end || fVerbose>4){
       if(loopoverall){
 	FindPeak(cangle,spr, prtangle);
@@ -381,10 +390,10 @@ Bool_t PrtLutReco::FindPeak(Double_t& cherenkovreco, Double_t& spr, Double_t a){
 
 	c2->cd(2);
 	gStyle->SetOptStat(1110); 
-	fHist5->SetTitle(Form("True from MC, #theta = %d#circ", a));
+	fHist5->SetTitle(Form("True from MC, #theta = %d#circ", int(a)));
 	fHist5->Draw("colz");
 
-	c2->Print(Form("spr/tcorr_%d.png", a));
+	c2->Print(Form("spr/tcorr_%d.png", int(a)));
 	c2->Modified();
 	c2->Update();
 	c2->WaitPrimitive("");
