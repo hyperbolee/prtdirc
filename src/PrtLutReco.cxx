@@ -25,8 +25,6 @@
 #include <TLegend.h>
 #include "../../prttools/prttools.C"
 
-#include "../macro/constants.h"
-
 using std::cout;
 using std::endl;
 
@@ -103,6 +101,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	TString outFile = PrtManager::Instance()->GetOutName()+"_spr.root";
 	Int_t lensID(0);
+	Double_t beam(0);
 	Double_t theta(0),phi(0), trr(0),  nph(0),
 		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0);
 	Double_t minChangle(0);
@@ -124,6 +123,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	tree.Branch("test1",&test1,"test1/D");
 	tree.Branch("test2",&test2,"test2/D");
 	tree.Branch("lens",&lensID,"lensID/I");
+	tree.Branch("beam",&beam,"beam/D");
 	tree.Branch("theta",&theta,"theta/D");
 	tree.Branch("phi",&phi,"phi/D");
 
@@ -132,6 +132,11 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tHits(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0);
 	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0);
+
+    // counter channels
+	int tof1_chan =  960;
+	int tof2_chan = 1104;
+	int trig_chan = 1344;
 
 	TTree *lTree = new TTree("reco","SPR");
 	lTree->Branch("mcp",&tMCP,"tMCP/I");
@@ -169,6 +174,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			prtangle = fEvent->GetAngle();
 			studyId = fEvent->GetGeometry();
 			lensID = fEvent->GetLens();
+			beam = fEvent->GetMomentum().z();
 			momInBar.RotateY(TMath::Pi()-prtangle*rad);
 			// momInBar = fEvent->GetMomentum().Unit();
 			if(fVerbose==3){
@@ -298,17 +304,22 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 						
 						// fill lTree for mcps
 						chan = fHit.GetChannel();
-						if(chan < 960)
+						if(true)//chan < 960)
 						{
 							tMCP  = fHit.GetMcpId();
-							tPix  = fEvent->GetParticle();
-							tPID  = fHit.GetParticleId();
+							tPix  = fHit.GetPixelId() - 1;
+							tPID  = fEvent->GetParticle();
 							tNRef = fHit.GetNreflectionsInPrizm();
 							tTheta = tangle;
 							tTime  = hitTime;
 							tExpt  = bartime + evtime;
-							tDiff  = tExpt - tTime;
-
+							tDiff  = tTime - tExpt;
+							/*tTof1  = tTime - tTof1;
+							tTof2  = tTof1;
+							tTrig  = tTime - tTof1;*/
+							// if I use time-count it will give
+							// positive and negative peaks, revisit
+							
 							lTree->Fill();
 						}
 						
