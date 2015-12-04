@@ -25,6 +25,8 @@
 #include <TLegend.h>
 #include "../../prttools/prttools.C"
 
+#include "../macro/constants.h"
+
 using std::cout;
 using std::endl;
 
@@ -129,7 +131,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tHits(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0);
-	Double_t tTheta(0), tTime(0), tExpt(0);
+	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0);
 
 	TTree *lTree = new TTree("reco","SPR");
 	lTree->Branch("mcp",&tMCP,"tMCP/I");
@@ -140,6 +142,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("theta",&tTheta,"tTheta/D");
 	lTree->Branch("time",&tTime,"tTime/D");
 	lTree->Branch("expt",&tExpt,"tExpt/D");
+	lTree->Branch("diff",&tDiff,"tDiff/D");
 	lTree->Branch("tof1",&tTof1,"tTof1/D");
 	lTree->Branch("tof2",&tTof2,"tTof2/D");
 	lTree->Branch("trig",&tTrig,"tTrig/D");
@@ -165,6 +168,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			tree.SetTitle(fEvent->PrintInfo());
 			prtangle = fEvent->GetAngle();
 			studyId = fEvent->GetGeometry();
+			lensID = fEvent->GetLens();
 			momInBar.RotateY(TMath::Pi()-prtangle*rad);
 			// momInBar = fEvent->GetMomentum().Unit();
 			if(fVerbose==3){
@@ -179,7 +183,23 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		//   if( fEvent->GetParticle()==2212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.90 || fEvent->GetTest1()>176) ) continue;
 		//   if( fEvent->GetParticle()==212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.10 ||  fEvent->GetTest1()>175.2) ) continue;
 		// }
-    
+
+		Int_t chan(0);
+		tHits = nHits;
+		tTof1 = tTof2 = tTrig = 0;
+		// loop over hits to find counter times
+		for(Int_t ihit=0; ihit<nHits; ihit++)
+		{
+			fHit = fEvent->GetHit(ihit);
+			hitTime = fHit.GetLeadTime();
+			chan = fHit.GetChannel();
+
+			if(chan == tof1_chan) tTof1 = hitTime;
+			if(chan == tof2_chan) tTof2 = hitTime;
+			if(chan == trig_chan) tTrig = hitTime;
+
+		}
+		
 		for(Int_t h=0; h<nHits; h++) {
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
@@ -275,6 +295,24 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
 						if(0.7<tangle && tangle<0.9) isGoodHit=true;
+						
+						// fill lTree for mcps
+						chan = fHit.GetChannel();
+						if(chan < 960)
+						{
+							tMCP  = fHit.GetMcpId();
+							tPix  = fEvent->GetParticle();
+							tPID  = fHit.GetParticleId();
+							tNRef = fHit.GetNreflectionsInPrizm();
+							tTheta = tangle;
+							tTime  = hitTime;
+							tExpt  = bartime + evtime;
+							tDiff  = tExpt - tTime;
+
+							lTree->Fill();
+						}
+						
+
 						if(fVerbose==3){	      
 							TVector3 rdir = TVector3(-dir.X(),dir.Y(),dir.Z());
 							rdir.RotateUz(cz);	      
@@ -323,6 +361,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	tree.Fill();
   
 	tree.Write();
+	lTree->Write();
 	file.Write();
 }
 
@@ -351,7 +390,7 @@ Bool_t PrtLutReco::FindPeak(Double_t& cherenkovreco, Double_t& spr, Double_t a){
 		spr = fFit->GetParameter(2); 
 		if(fVerbose>1) gROOT->SetBatch(0);
     
-		Bool_t storePics(true);
+		Bool_t storePics(false);
 		if(storePics){
 			canvasAdd("r_tangle",800,400);
 			fHist->SetTitle(Form("theta %3.1f", a));

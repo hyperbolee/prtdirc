@@ -1,13 +1,12 @@
 // Constants and useful functions for
 // prtdirc macros and simulation
-#include "../../prttools/prttools.C"
 
 // particle IDs
 int proton = 2212;
 int piplus =  212;
 
 // counter channels
-int tof1_chan = 960;
+int tof1_chan =  960;
 int tof2_chan = 1104;
 int trig_chan = 1344;
 
