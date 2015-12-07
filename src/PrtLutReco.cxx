@@ -102,7 +102,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	TString outFile = PrtManager::Instance()->GetOutName()+"_spr.root";
 	Int_t lensID(0);
 	Double_t beam(0);
-	Double_t theta(0),phi(0), trr(0),  nph(0),
+	Double_t theta(0),phi(0), trr(0), nph(0), yield(0),
 		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0);
 	Double_t minChangle(0);
 	Double_t maxChangle(1);
@@ -115,6 +115,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	tree.Branch("spr", &spr,"spr/D");
 	tree.Branch("trr", &trr,"trr/D");
 	tree.Branch("nph",&nph,"nph/D");
+	tree.Branch("yield",&yield,"yield/D");
 	tree.Branch("cangle",&cangle,"cangle/D");
 	tree.Branch("par3",&par3,"par3/D");
 	tree.Branch("par4",&par4,"par4/D");
@@ -156,9 +157,10 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	if(end==0) end = nEvents;
   
 	std::cout<<"Run started for ["<<start<<","<<end <<"]"<<std::endl;
-	Int_t nsHits(0),nsEvents(0),studyId(0), nHits(0);
+	Int_t nsHits(0),nsEvents(0),nsYield(0),studyId(0),nHits(0);
 	Bool_t loopoverall(false);
-	if(start==-1) {
+	if(start==-1)
+	{
 		loopoverall=true;
 		start=0;
 	}
@@ -190,7 +192,6 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		//   if( fEvent->GetParticle()==212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.10 ||  fEvent->GetTest1()>175.2) ) continue;
 		// }
 
-		Int_t chan(0);
 		tHits = nHits;
 		tTof1 = tTof2 = tTrig = 0;
 		// loop over hits to find counter times
@@ -198,7 +199,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		{
 			fHit = fEvent->GetHit(ihit);
 			hitTime = fHit.GetLeadTime();
-			chan = fHit.GetChannel();
+			int chan = fHit.GetChannel();
 
 			if(chan == tof1_chan) tTof1 = hitTime;
 			if(chan == tof2_chan) tTof2 = hitTime;
@@ -300,28 +301,25 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 					//cout << "RECONSTRUCTED ANGLE\t" << tangle << endl;
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
-						if(0.7<tangle && tangle<0.9) isGoodHit=true;
-						
-						// fill lTree for mcps
-						chan = fHit.GetChannel();
-						if(true)//chan < 960)
-						{
-							tMCP  = fHit.GetMcpId();
-							tPix  = fHit.GetPixelId() - 1;
-							tPID  = fEvent->GetParticle();
-							tNRef = fHit.GetNreflectionsInPrizm();
-							tTheta = tangle;
-							tTime  = hitTime;
-							tExpt  = bartime + evtime;
-							tDiff  = tTime - tExpt;
-							/*tTof1  = tTime - tTof1;
-							tTof2  = tTof1;
-							tTrig  = tTime - tTof1;*/
-							// if I use time-count it will give
-							// positive and negative peaks, revisit
+						if(0.7<tangle && tangle<0.9)
+							if(fabs((bartime+evtime)-hitTime)<3)
+								isGoodHit=true;
+
+						tMCP  = fHit.GetMcpId();
+						tPix  = fHit.GetPixelId() - 1;
+						tPID  = fEvent->GetParticle();
+						tNRef = fHit.GetNreflectionsInPrizm();
+						tTheta = tangle;
+						tTime  = hitTime;
+						tExpt  = bartime + evtime;
+						tDiff  = tTime - tExpt;
+						/*tTof1  = tTime - tTof1;
+						  tTof2  = tTof1;
+						  tTrig  = tTime - tTof1;*/
+						// if I use time-count it will give
+						// positive and negative peaks, revisit
 							
-							lTree->Fill();
-						}
+						lTree->Fill();
 						
 
 						if(fVerbose==3){	      
@@ -338,7 +336,8 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 					}
 				}
 			}
-      
+			
+			nsYield++;
 			if(isGoodHit) nsHits++; 	
 		}
 
@@ -349,6 +348,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			if(loopoverall){
 				FindPeak(cangle,spr, prtangle);
 				nph = nsHits/(Double_t)nsEvents;
+				yield = nsYield/(Double_t)nsEvents;
 				spr = spr*1000;
 				trr = spr/sqrt(nph);
 				theta = fEvent->GetAngle();
@@ -364,6 +364,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
   
 	FindPeak(cangle,spr, prtangle);
 	nph = nsHits/(Double_t)nsEvents;
+	yield = nsYield/(Double_t)nsEvents;
 	spr = spr*1000;
 	trr = spr/sqrt(nph);
 	theta = fEvent->GetAngle();
