@@ -1,0 +1,37 @@
+// test for drawing pads and making scale sepearte
+// will use for making my own drawScan.C type macro
+
+gStyle->SetOptStat(0)
+TCanvas *c = new TCanvas()
+TPad *p1 = new TPad("pad","test pad",.1,.1,.9,.9,kWhite,0,0)
+TPad *p2 = new TPad("pad","test pad",.9,.1,1,.9,kWhite,0,0)
+p1->Draw()
+p2->Draw()
+TH2D *td = new TH2D("twoD","2D test",8,0,8,8,0,8)
+td->SetTitle("")
+td->GetXaxis()->SetNdivisions(0)
+td->GetYaxis()->SetNdivisions(0)
+TRandom *ran = new TRandom(1235353210)
+for(int l=0; l<100; l++) for(int i=0;i<=8;i++) for(int j=0;j<=8;j++){ double r=ran->Rndm(); if(r<=0.5) td->Fill(i,j); }
+p1->cd()
+p1->SetMargin(0,0,0,0)
+td->Draw("col")
+
+p2->cd()
+p2->SetMargin(0,0,0,0)
+int max = td->GetMaximum()
+int min = td->GetMinimum()
+TH2F *h2 = new TH2F("h2","palette hist",10,0,1,10,0,1)
+h2->SetTitle("")
+h2->GetXaxis()->SetNdivisions(0)
+h2->GetYaxis()->SetNdivisions(0)
+h2->SetMaximum(max)
+h2->SetMinimum(min)
+h2->SetEntries(1)
+h2->Draw("col")
+p2->Update()
+TPaletteAxis *pal = new TPaletteAxis(0.02,0,0.6,1,h2)
+pal->SetLabelSize(0.3)
+pal->SetLabelOffset(0.05)
+pal->Draw()
+
