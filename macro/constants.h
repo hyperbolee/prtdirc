@@ -15,15 +15,11 @@ int trig_chan = 1344;
 double expt_lo =-3;
 double expt_hi = 3;
 
-//char *fish_cut = Form("%f<(time-tof1) && (time-tof1)<%f && %f<(time-trig) && (time-trig)<%f && cnt1==1 && cntT==1",tof1_lo,tof1_hi,trig_lo,trig_hi);
+// default cut for beam data
+char *def_cut = Form("%f<diff && diff<%f && PID==%d",expt_lo,expt_hi,proton);
 
-// usual cut on data
-//char *data_cut = Form("%f<(time-expt) && (time-expt)<%f && PID>1000",expt_lo,expt_hi);
-
-char *cut = Form("%f<diff && diff<%f && PID==%d",expt_lo,expt_hi,proton);
-
-// add cut from histogram counter to cut string
-void counterCut( TH1D *counter )
+// add cut from histogram counter to a string
+void counterCut( TH1D *counter , char *&tmpcut = def_cut)
 {
 	int min(0), max(0); // first zero bins around peak
 	int bin = counter->GetMaximumBin(); // bin at peak
@@ -46,6 +42,6 @@ void counterCut( TH1D *counter )
 
 	char *title = counter->GetTitle();
 	char *ccut = Form(" && %d<%s && %s<%d", min, title, title, max);
-	strcat(cut,ccut);
+	strcat(tmpcut,ccut);
 
 }

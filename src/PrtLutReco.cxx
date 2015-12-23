@@ -56,11 +56,11 @@ PrtLutReco::PrtLutReco(TString infile, TString lutfile, Int_t verbose)
 	fFit = new TF1("fgaus","[0]*exp(-0.5*((x-[1])/[2])*(x-[1])/[2]) +x*[3]",0.35,0.9);
 	fSpect = new TSpectrum(10);
 
-	if(infile.Contains("beam_")){
+	/*if(infile.Contains("beam_")){
 		TString fileid(infile);
 		fileid.Remove(0,fileid.Last('/')+1);
 		fileid.Remove(fileid.Last('.')-1);
-		prt_data_info = getDataInfo(fileid);
+		//prt_data_info = getDataInfo(fileid);
     
 		TString opath(infile);
 		opath.Remove(opath.Last('/'));
@@ -70,7 +70,8 @@ PrtLutReco::PrtLutReco(TString infile, TString lutfile, Int_t verbose)
 			fSavePath = opath+Form("/%ds/%d",prt_data_info.getStudyId(),prt_data_info.getFileId());
 		}
     
-	}else fSavePath="auto";
+		}else */
+		fSavePath="auto";
 	std::cout<<"fSavePath  "<< fSavePath <<std::endl;    
 
 	for(Int_t i=0; i<5000; i++){
