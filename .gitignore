@@ -3,7 +3,12 @@
 /macro/rdata
 /macro/data
 *.so
+*.o
 *.d
 AutoDict*
 *.root
+*.png
+*.tsv
+*.ods
 *~
+\#*\#
