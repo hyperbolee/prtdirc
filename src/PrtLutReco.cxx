@@ -140,7 +140,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	int tof2_chan = 1104;
 	int trig_chan = 1344;
 
-	TTree *lTree = new TTree("reco","SPR");
+	TTree *lTree = new TTree("reco","reconstruction");
 	lTree->Branch("mcp",&tMCP,"tMCP/I");
 	lTree->Branch("pix",&tPix,"tPix/I");
 	lTree->Branch("PID",&tPID,"tPID/I");
@@ -153,6 +153,10 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("tof1",&tTof1,"tTof1/D");
 	lTree->Branch("tof2",&tTof2,"tTof2/D");
 	lTree->Branch("trig",&tTrig,"tTrig/D");
+
+	TTree *hTree = new TTree("hits","hit by hit variables");
+   	hTree->Branch("mcp",&tMCP,"tMCP/I");
+	hTree->Branch("pix",&tPix,"tPix/I");
   
 	Int_t nEvents = fChain->GetEntries();
 	if(end==0) end = nEvents;
@@ -195,7 +199,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 		tHits = nHits;
 		tTof1 = tTof2 = tTrig = 0;
-		// loop over hits to find counter times
+		// get counter times for this event
 		for(Int_t ihit=0; ihit<nHits; ihit++)
 		{
 			fHit = fEvent->GetHit(ihit);
@@ -205,6 +209,11 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			if(chan == tof1_chan) tTof1 = hitTime;
 			if(chan == tof2_chan) tTof2 = hitTime;
 			if(chan == trig_chan) tTrig = hitTime;
+
+			// get mcp and pix for hTree
+			tMCP = fHit.GetMcpId();
+			tPix = fHit.GetPixelId()-1;
+			hTree->Fill();
 
 		}
 		
@@ -375,6 +384,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
   
 	tree.Write();
 	lTree->Write();
+	hTree->Write();
 	file.Write();
 }
 

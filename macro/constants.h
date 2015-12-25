@@ -19,6 +19,9 @@ double expt_hi = 3;
 char *def_cut = Form("%f<diff && diff<%f && PID==%d",expt_lo,expt_hi,proton);
 
 // add cut from histogram counter to a string
+// TODO: break this into 3 different functions
+//       one for each counter with input of tree and cut string
+//       should fix problem of having wrong titles...
 void counterCut( TH1D *counter , char *&tmpcut = def_cut)
 {
 	int min(0), max(0); // first zero bins around peak
