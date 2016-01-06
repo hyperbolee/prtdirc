@@ -157,6 +157,11 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	TTree *hTree = new TTree("hits","hit by hit variables");
    	hTree->Branch("mcp",&tMCP,"tMCP/I");
 	hTree->Branch("pix",&tPix,"tPix/I");
+	hTree->Branch("PID",&tPID,"tPID/I");
+	hTree->Branch("time",&tTime,"tTime/D");
+	hTree->Branch("tof1",&tTof1,"tTof1/D");
+	hTree->Branch("tof2",&tTof2,"tTof2/D");
+	hTree->Branch("trig",&tTrig,"tTrig/D");
   
 	Int_t nEvents = fChain->GetEntries();
 	if(end==0) end = nEvents;
@@ -175,7 +180,8 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	for (Int_t ievent=start; ievent<nEvents; ievent++){ //&& ievent<end
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
-		if(ievent%1000==0) std::cout<<"Event # "<< ievent << " has "<< nHits <<" hits"<<std::endl;
+		if(ievent%1000==0) 
+			std::cout<<"Event # "<< ievent << " has "<< nHits <<" hits"<<std::endl;
 		if(ievent==0){
 			tree.SetTitle(fEvent->PrintInfo());
 			prtangle = fEvent->GetAngle();
@@ -211,15 +217,21 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			if(chan == trig_chan) tTrig = hitTime;
 
 			// get mcp and pix for hTree
-			tMCP = fHit.GetMcpId();
-			tPix = fHit.GetPixelId()-1;
-			hTree->Fill();
+			//tMCP = fHit.GetMcpId();
+			//tPix = fHit.GetPixelId()-1;
+			//hTree->Fill();
 
 		}
 		
+		tPID  = fEvent->GetParticle();
 		for(Int_t h=0; h<nHits; h++) {
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
+
+			// get mcp and pix for hTree
+			tTime = hitTime;
+			tMCP  = fHit.GetMcpId();
+			tPix  = fHit.GetPixelId()-1;
       
 			{ //time cuts
 				if(prtangle<=80){
@@ -265,8 +277,8 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			Int_t sensorId = 100*fHit.GetMcpId()+fHit.GetPixelId();
 			if(sensorId==1) continue;
 
+			hTree->Fill();
 			Bool_t isGoodHit(false);
-
 			Int_t size =fLutNode[sensorId]->Entries();
 			for(int i=0; i<size; i++){
 				weight = fLutNode[sensorId]->GetWeight(i);
@@ -317,7 +329,6 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 						tMCP  = fHit.GetMcpId();
 						tPix  = fHit.GetPixelId() - 1;
-						tPID  = fEvent->GetParticle();
 						tNRef = fHit.GetNreflectionsInPrizm();
 						tTheta = tangle;
 						tTime  = hitTime;

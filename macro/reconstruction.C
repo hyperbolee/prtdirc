@@ -48,9 +48,9 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 		t->Project("time-trig","time-trig");
 	
 		// make cuts w/ counters
-		counterCut(tof1, data_cut);
-		counterCut(tof2, data_cut);
-		counterCut(trig, data_cut);
+		cntrCut(tof1, data_cut, "time-tof1");
+		cntrCut(tof2, data_cut, "time-tof2");
+		cntrCut(trig, data_cut, "time-trig");
 		//cout << "data cut\t" << data_cut << endl;
 
 		// make them pretty (and distinguishable)
