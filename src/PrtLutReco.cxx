@@ -133,7 +133,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tHits(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0);
-	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0);
+	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0), tPath(0);
 
     // counter channels
 	int tof1_chan =  960;
@@ -145,6 +145,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("pix",&tPix,"tPix/I");
 	lTree->Branch("PID",&tPID,"tPID/I");
 	lTree->Branch("nref",&tNRef,"tNRef/I");
+	lTree->Branch("path",&tPath,"tPath/D");
 	lTree->Branch("hits",&tHits,"tHits/I");
 	lTree->Branch("theta",&tTheta,"tTheta/D");
 	lTree->Branch("time",&tTime,"tTime/D");
@@ -330,6 +331,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 						tMCP  = fHit.GetMcpId();
 						tPix  = fHit.GetPixelId() - 1;
 						tNRef = fHit.GetNreflectionsInPrizm();
+						tPath = fHit.GetPathInPrizm();
 						tTheta = tangle;
 						tTime  = hitTime;
 						tExpt  = bartime + evtime;

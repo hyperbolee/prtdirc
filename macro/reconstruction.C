@@ -10,6 +10,7 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 					char *runtype = "data", 
 					double tdiff = 1.5)
 {
+	gErrorIgnoreLevel = kWarning; // ignore 'Info in...' messages
 	gStyle->SetOptFit(1111); // show fit parameters
 	gStyle->SetOptStat(0);   // remove stats box
 	TGaxis::SetMaxDigits(4); // put axis in scientific notation
@@ -28,10 +29,15 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 	d->SetBranchAddress("nph",&nph);
 	d->GetEntry(0);
 
+	// get time-expt peak value
+	TH1D *diff = new TH1D("diff","diff",100,-5,5);
+	t->Project("diff","diff");
+	double diffmax = diff->GetBinCenter(diff->GetMaximumBin());
+
 	// define cuts and save path
-	char *sim_cut  = Form("abs(diff)<%f",tdiff);
-	char *data_cut = Form("abs(diff)<%f",tdiff);
-	char *savepath = "../macro/countercuts";
+	char *sim_cut  = Form("abs(diff-%f)<%f",diffmax,tdiff);
+	char *data_cut = Form("abs(diff-%f)<%f",diffmax,tdiff);
+	char *savepath = "../macro/timecuts";
 
 	// define cut and project from tree to histogram w/ proper cuts
 	theta = new TH1D("theta","theta",100,0.6,1.0);
@@ -53,13 +59,14 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 		cntrCut(trig, data_cut, "time-trig");
 		//cout << "data cut\t" << data_cut << endl;
 
-		// make them pretty (and distinguishable)
+		/*
+		// make counter hists pretty (and distinguishable)
 		tof1->SetTitle(data_cut);
 		tof1->SetTitleSize(0.5);
 		tof1->SetLineColor(kBlue);
 		tof2->SetLineColor(kRed);
 		trig->SetLineColor(kGreen);
-		
+
 		// draw histograms and save canvas
 		char *cname = Form("%s/reco_%s_%d_%d_ccuts.png",
 					  savepath,runtype,lens,(int)angle);
@@ -69,6 +76,7 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 		tof2->Draw("same");
 		trig->Draw("same");
 		ccanv->Print(cname);
+		*/
 
 		t->Project("theta","theta",data_cut);
 	}
@@ -87,19 +95,19 @@ void reconstruction(TString infile = "../build/reco_spr.root",
 						 center-0.05, center+0.05);
 	gaus0->SetParameters(height,center,sigma,slope,shift);
 	gaus0->SetParNames("height","mean","sigma","slope","const");
-
-	TCanvas *c1 = new TCanvas();
-	c1->cd();
 	theta->Fit("gaus0","QR");
+	double truesig = 1000*gaus0->GetParameter("sigma");
 	
 	// define strings for picture and root file names
-	//cout << "defining strings" << endl;
-	char *namt = Form("theta_{c} lens %d angle %d",lens,(int)angle);
-	char *pict = Form("%s/reco_%s_%d_%d.png",
-					  savepath,runtype,lens,(int)angle);
-	//cout << pict << endl;
+	char *namt = Form("theta_{c} lens %d angle %d diff %1.2f",
+					  lens,(int)angle,tdiff);
+	char *pict = Form("%s/reco_%s_%d_%d_%1.2f.png",
+					  savepath,runtype,lens,(int)angle,tdiff);
 
+	/*
 	// format histogram for saving
+	TCanvas *c1 = new TCanvas();
+	c1->cd();
 	double max = 1.1*theta->GetMaximum();
 	theta->SetTitle("");
 	theta->GetXaxis()->SetLabelSize(0.06);
@@ -113,24 +121,41 @@ void reconstruction(TString infile = "../build/reco_spr.root",
    	gStyle->SetOptFit(0);
 	c1->cd();
 	theta->Draw();
-	pict = Form("%s/reco_%s_%d_%d_nofit.png",
-				savepath,runtype,lens,(int)angle);
+	pict = Form("%s/reco_%s_%d_%d_%1.2f_nofit.png",
+				savepath,runtype,lens,(int)angle,tdiff);
 	c1->Print(pict);
+	*/
 
-	double truesig = 1000*gaus0->GetParameter("sigma");
 	// print relevant info to screen and file
-	char *outnm = Form("../macro/sigma_%s.tsv",runtype);
+	char *outnm = Form("../macro/timecut_%s.tsv",runtype);
 	ofstream out;
 	out.open(outnm, fstream::in | fstream::out | fstream::app);
-	out << "\t" << angle 
+	out << angle 
 		<< "\t" << lens  
-		<< "\t" << truesig 
+		<< "\t" << tdiff
+		<< "\t" << truesig
 		<< "\t" << yield 
 		<< "\t" << nph << endl;
 	out.close();
-	cout << "\033[1;31m" << angle
+	cout << "\033[1;31m" 
+		 << "\nangle:\t" << angle
+		 << "\nlens:\t"  << lens
+		 << "\ndiff:\t"  << tdiff
+		 << "\npeak:\t"  << diffmax
 		 << "\nsigma:\t" << truesig
 		 << "\nhits/e:\t" << nph
 		 << "\nphts/e:\t" << yield 
 		 << "\033[0m" <<  endl;
+	TFile *tfile = new TFile(Form("timecut_%1.1f_%d_%1.2f.root",
+								  angle,lens,tdiff),"create");
+	TTree *ttree = new TTree("tcut","tcut");
+	ttree->Branch("angle",&angle,"angle/D");
+	ttree->Branch("lens",&lens,"lens/I");
+	ttree->Branch("tcut",&tdiff,"tcut/D");
+	ttree->Branch("sigma",&truesig,"truesig/D");
+	ttree->Branch("nph",&yield,"yield/D");
+
+	ttree->Fill();
+	ttree->Write();
+	tfile->Delete();
 }

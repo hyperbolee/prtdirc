@@ -1,8 +1,7 @@
 //#########################################
 // Modified version of drawScan.C
-// Adds TPad to right of MCPs
-// to show relative  number
-// of hits in each pixel
+// Uses reconstructed file instead
+// of processed data file
 //
 // Lee Allison - Dec. 23 2015
 
@@ -28,11 +27,11 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	// make counter histograms for cut
 	// TODO: only do this part for beam data
 	//       add event type to dirc tree and test that
-	char *selection = Form("1");
+	char *selection = Form("PID>1000");
 	//tof1Cut(h,selection);
 	//tof2Cut(h,selection);
 	//trigCut(h,selection);
-	cout << "data selection:\t" << selection << endl;
+	//cout << "data selection:\t" << selection << endl;
     
 	TTreeFormula* tform 
 		= new TTreeFormula("tree selection",selection,h);
@@ -45,15 +44,36 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	{
 		h->GetEntry(ientry);
 		if(tform->EvalInstance()==0) // skip if "bad" entry
+		{
 			badC++;
-		//	continue;
-		fhDigi[mcpid]->Fill(pixid%8, pixid/8);
+			continue;
+		}
+	    
+	    fhDigi[mcpid]->Fill(pixid%8, pixid/8);
 	}
-	cout << "bad:\t" << badC << "\ntot:\t" << h->GetEntries()-badC << endl;
+	//cout << "percent cut:\t" << 100*double(badC)/h->GetEntries() << endl;
 	drawDigi("m,p,v\n",3,-2,-2);
 	cDigi->cd();
 	(new TPaletteAxis(0.90,0.1,0.94,0.90,fhDigi[0]))->Draw();
-	if(save)
-		cDigi->Print(Form("fish/fish_%d_%.1f.png",lens,angle));
-}
 
+	//if(save)
+	//cDigi->Print(Form("fish/fish_sim_%d_%.1f.png",lens,angle));
+
+	// draw and save each mcp individually
+	drawDigi("m,p,v\n",3,-1,-1);
+	for(int mcp=0; mcp<15; mcp++)
+	{
+		TCanvas *canv = new TCanvas();
+		canv->cd();
+
+		fhDigi[mcp]->Draw("colz");
+		//canv->Print(Form("fish/fish_sim_%d_%.1f_mcp%d.png",
+						 lens,angle,mcp));
+
+		canv->Delete();
+	}
+
+	TCanvas *canv = new TCanvas();
+	fhDigi[0]->Draw("colz");
+	h->Draw("time","","same");
+}
