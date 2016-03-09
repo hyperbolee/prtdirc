@@ -40,7 +40,8 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	initDigi();
 	SetRootPalette(1);
 	int badC(0);
-	for (Int_t ientry=0; ientry<h->GetEntries(); ientry++)
+	for (Int_t ientry=0; ientry<40; ientry++)
+			 //h->GetEntries(); ientry++)
 	{
 		h->GetEntry(ientry);
 		if(tform->EvalInstance()==0) // skip if "bad" entry
@@ -52,7 +53,7 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	    fhDigi[mcpid]->Fill(pixid%8, pixid/8);
 	}
 	//cout << "percent cut:\t" << 100*double(badC)/h->GetEntries() << endl;
-	drawDigi("m,p,v\n",3,-2,-2);
+	drawDigi("m,p,v\n",3);
 	cDigi->cd();
 	(new TPaletteAxis(0.90,0.1,0.94,0.90,fhDigi[0]))->Draw();
 
@@ -60,6 +61,7 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	//cDigi->Print(Form("fish/fish_sim_%d_%.1f.png",lens,angle));
 
 	// draw and save each mcp individually
+	/*
 	drawDigi("m,p,v\n",3,-1,-1);
 	for(int mcp=0; mcp<15; mcp++)
 	{
@@ -76,4 +78,5 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	TCanvas *canv = new TCanvas();
 	fhDigi[0]->Draw("colz");
 	h->Draw("time","","same");
+	*/
 }

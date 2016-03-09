@@ -141,7 +141,7 @@ G4VParticleChange* PrtCherenkovProcess::PostStepDoIt(const G4Track& aTrack, cons
 			rand = G4UniformRand();	
  
 		} while (rand*maxSin2 > sin2Theta);
-
+		std::cout << "real theta\t" << acos(cosTheta) << std::endl;
 		// Generate random position of photon on cone surface 
 		// defined by Theta 
 

@@ -41,6 +41,7 @@ PrtLutNode *fLutNode[5000];
 // -----   Default constructor   -------------------------------------------
 PrtLutReco::PrtLutReco(TString infile, TString lutfile, Int_t verbose)
 {
+	gErrorIgnoreLevel = kWarning;
 	fVerbose = verbose;
 	fChain = new TChain("data");
 	fChain->Add(infile);
@@ -89,7 +90,7 @@ PrtLutReco::~PrtLutReco(){
 void PrtLutReco::Run(Int_t start, Int_t end){
 	cout << "Start Reco run" << endl;
 
-	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz;
+	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz,truemom;
 	Double_t cangle,spr,tangle,boxPhi,weight,evtime,bartime, lenz,dirz,luttheta, barHitTime, hitTime;
 	Int_t pdgcode, evpointcount=0;
 	Bool_t reflected = kFALSE;
@@ -131,38 +132,58 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	test1 = PrtManager::Instance()->GetTest1();
 
-	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tHits(0);
-	Double_t  tTof1(0), tTof2(0), tTrig(0);
-	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0), tPath(0);
+	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
+	Double_t  bar(0), tTof1(0), tTof2(0), tTrig(0), tTrueC(0), tX(0), tY(0);
+	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0);
 
     // counter channels
 	int tof1_chan =  960;
 	int tof2_chan = 1104;
 	int trig_chan = 1344;
 
+	// tree for ambiguity information (theta_C, etc)
 	TTree *lTree = new TTree("reco","reconstruction");
-	lTree->Branch("mcp",&tMCP,"tMCP/I");
-	lTree->Branch("pix",&tPix,"tPix/I");
-	lTree->Branch("PID",&tPID,"tPID/I");
-	lTree->Branch("nref",&tNRef,"tNRef/I");
-	lTree->Branch("path",&tPath,"tPath/D");
+	lTree->Branch("mcp",&tMCP,"tMCP/I"); // mcp hit
+	lTree->Branch("pix",&tPix,"tPix/I"); // pixel hit
+	lTree->Branch("x",&tX,"tX/D"); // x position on detector
+	lTree->Branch("y",&tY,"tY/D"); // y position on detector
+	lTree->Branch("chan",&tChan,"tChan/I"); // channel number
+	lTree->Branch("PID",&tPID,"tPID/I"); // particle ID based on timing
+	lTree->Branch("npi",&tPi,"tPi/I"); // number of pions processed
+	lTree->Branch("nprot",&tProt,"tProt/I"); // number of protons processed
+	lTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections in prizm
+	lTree->Branch("path",&tPath,"tPath/D"); // path ID in prizm
+	lTree->Branch("LUTnref",&tNRefLUT,"tNRefLUT/I"); // number of reflections in prizm
+	lTree->Branch("LUTpath",&tPathLUT,"tPathLUT/D"); // path ID in prizm
 	lTree->Branch("hits",&tHits,"tHits/I");
-	lTree->Branch("theta",&tTheta,"tTheta/D");
-	lTree->Branch("time",&tTime,"tTime/D");
-	lTree->Branch("expt",&tExpt,"tExpt/D");
-	lTree->Branch("diff",&tDiff,"tDiff/D");
-	lTree->Branch("tof1",&tTof1,"tTof1/D");
-	lTree->Branch("tof2",&tTof2,"tTof2/D");
-	lTree->Branch("trig",&tTrig,"tTrig/D");
-
+	lTree->Branch("theta",&tTheta,"tTheta/D"); // reconstructed theta_C
+	lTree->Branch("bar",&bar,"bar/D"); // angle between bar and beam
+	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
+	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
+	lTree->Branch("diff",&tDiff,"tDiff/D"); // difference in times
+	lTree->Branch("tof1",&tTof1,"tTof1/D"); // timing of TOF1
+	lTree->Branch("tof2",&tTof2,"tTof2/D"); // timing of TOF2
+	lTree->Branch("trig",&tTrig,"tTrig/D"); // timing of TRIG
+	lTree->Branch("trueC",&tTrueC,"tTrueC/D");
+	
+	// tree for hit-by-hit information (timing, etc)
 	TTree *hTree = new TTree("hits","hit by hit variables");
    	hTree->Branch("mcp",&tMCP,"tMCP/I");
 	hTree->Branch("pix",&tPix,"tPix/I");
+	hTree->Branch("x",&tX,"tX/D"); // x position on detector
+	hTree->Branch("y",&tY,"tY/D"); // y position on detector
+	hTree->Branch("chan",&tChan,"tChan/I");
 	hTree->Branch("PID",&tPID,"tPID/I");
+	hTree->Branch("npi",&tPi,"tPi/I"); // number of pions processed
+	hTree->Branch("nprot",&tProt,"tProt/I"); // number of protons processed
+	hTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections in prizm
+	hTree->Branch("path",&tPath,"tPath/D"); // path ID in prizm
+	hTree->Branch("bar",&bar,"theta/D");
 	hTree->Branch("time",&tTime,"tTime/D");
 	hTree->Branch("tof1",&tTof1,"tTof1/D");
 	hTree->Branch("tof2",&tTof2,"tTof2/D");
 	hTree->Branch("trig",&tTrig,"tTrig/D");
+	hTree->Branch("trueC",&tTrueC,"tTrueC/D");
   
 	Int_t nEvents = fChain->GetEntries();
 	if(end==0) end = nEvents;
@@ -178,7 +199,10 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	cout << "Start event loop" << endl;
 	cout << "start\t" << start << endl;
 	cout << "nEvents\t" << nEvents << endl;
+	bool simulation(false);
+	int etot(0), htot(0), ntot(0);
 	for (Int_t ievent=start; ievent<nEvents; ievent++){ //&& ievent<end
+		etot++;
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
 		if(ievent%1000==0) 
@@ -196,6 +220,9 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 				cz = TVector3(-cz.X(),cz.Y(),cz.Z());
 			}
 		}
+
+		if(fEvent->GetType()==1)
+			simulation=true;
     
 		//if(fEvent->GetParticle()!=211) continue;
 		//if(fEvent->GetParticle()!=2212) continue;
@@ -203,7 +230,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		//   if( fEvent->GetParticle()==2212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.90 || fEvent->GetTest1()>176) ) continue;
 		//   if( fEvent->GetParticle()==212 && fabs(fEvent->GetMomentum().Mag()-7)<0.1 && ( fEvent->GetTest1()<175.10 ||  fEvent->GetTest1()>175.2) ) continue;
 		// }
-
+		htot+=nHits;
 		tHits = nHits;
 		tTof1 = tTof2 = tTrig = 0;
 		// get counter times for this event
@@ -225,6 +252,8 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		}
 		
 		tPID  = fEvent->GetParticle();
+		if(tPID>1000) tProt++;
+		else tPi++;
 		for(Int_t h=0; h<nHits; h++) {
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
@@ -233,7 +262,19 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			tTime = hitTime;
 			tMCP  = fHit.GetMcpId();
 			tPix  = fHit.GetPixelId()-1;
-      
+			tChan = fHit.GetChannel();
+			tX    = fHit.GetGlobalPos().X();
+			tY    = fHit.GetGlobalPos().Y();
+
+			// for simulation, save exact thetaC for comparison
+			if(simulation)
+			{
+				truemom = fHit.GetMomentum();
+				tTrueC  = truemom.Theta();
+				//printf("dir mom: %f\n",dir.Theta());
+				//printf("truemom: %f\n",truemom.Theta());
+			}
+
 			{ //time cuts
 				if(prtangle<=80){
 					if(hitTime<11 || hitTime>35) continue;
@@ -328,14 +369,24 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 							if(fabs((bartime+evtime)-hitTime)<3)
 								isGoodHit=true;
 
+						/*
+						  to get entry for true path in simulation:
+						  if(fEventType==1)
+						  truemom = fHit.GetMomentum() // wrong momentum vector
+						  truethC = momInBar.Angle(truemom)
+						*/
 						tMCP  = fHit.GetMcpId();
 						tPix  = fHit.GetPixelId() - 1;
 						tNRef = fHit.GetNreflectionsInPrizm();
+						tNRefLUT = fLutNode[sensorId]->GetNRefl(i);
 						tPath = fHit.GetPathInPrizm();
+						tPathLUT = pathid;
 						tTheta = tangle;
+						bar    = fEvent->GetAngle();
 						tTime  = hitTime;
 						tExpt  = bartime + evtime;
 						tDiff  = tTime - tExpt;
+
 						/*tTof1  = tTime - tTof1;
 						  tTof2  = tTof1;
 						  tTrig  = tTime - tTof1;*/
@@ -343,7 +394,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 						// positive and negative peaks, revisit
 							
 						lTree->Fill();
-						
+						ntot++;
 
 						if(fVerbose==3){	      
 							TVector3 rdir = TVector3(-dir.X(),dir.Y(),dir.Z());
@@ -399,6 +450,10 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Write();
 	hTree->Write();
 	file.Write();
+
+	cout << "total events\t" << etot << endl;
+	cout << "total hits  \t" << htot << endl;
+	cout << "total nodes \t" << ntot << endl;
 }
 
 Int_t g_num =0;

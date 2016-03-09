@@ -104,6 +104,9 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
     if(phit->GetTrackID()==track->GetTrackID()) {
       refl++;
       pathId += phit->GetNormalId()*1000*refl;
+	  // std::cout << "             pathId = " << pathId << std::endl;
+	  // std::cout << "phit->GetNormalId() = " << phit->GetNormalId() << std::endl;
+	  // std::cout << "               refl = " << refl << std::endl << std::endl;
     }
   }
 

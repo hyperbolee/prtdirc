@@ -61,6 +61,7 @@ G4bool PrtBarSD::ProcessHits(G4Step* aStep, G4TouchableHistory* hist)
   double fEnergy = track->GetDynamicParticle()->GetTotalEnergy();
   double cherenkov = acos(1/(1.47125*(fP/fEnergy)));
   PrtManager::Instance()->SetCurrentCherenkov(cherenkov);
+  //std::cout << "currentCherenkov\t" << cherenkov << std::endl;
 
   fHitsCollection->insert( newHit );
 

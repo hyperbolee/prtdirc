@@ -16,3 +16,66 @@ mcp     pix
 12      10,51 
 13      9,36 
 14      50,20 
+
+------------------------------------------------
+
+run simulation and in addition save true theta_C to root tree
+
+subtract hist of true theta_C from full simulation
+
+have background, will analize
+
+------------------------------------------------
+
+make plots:
+-time difference and gaussian fit for one file (90)
+
+- time diff and gaussian fit for combination of 10 plots around 90
+
+-------------------------------------------------
+
+int n=27;
+int count = 0;
+double x[n];
+double sig[n];
+double pos[n];
+TTree *reco = _file0->Get("reco");
+TH1D *tmp = new TH1D("tmp","tmp",100,-5,5);
+tmp->SetTitle("");
+TLine *l0 = new TLine(-1, 0, -1, 0);
+TLine *l1 = new TLine(-0.5, 0, -0.5, 0);
+TLine *l2 = new TLine(0.5, 0, 0.5, 0);
+TLine *l3 = new TLine(1, 0, 1, 0);
+l0->SetLineColor(kRed);
+l1->SetLineColor(kBlue);
+l2->SetLineColor(kBlue);
+l3->SetLineColor(kRed);
+l0->SetLineStyle(4);
+l3->SetLineStyle(4);
+TCanvas *c1 = new TCanvas();
+
+{
+for(int run=20; run<=150; run+=5)
+{ 
+  reco->Project("tmp","diff",Form("PID>1000 && bar==%d && 0.75<theta && theta<0.85",run)); 
+  double max = tmp->GetMaximum(); 
+  int mb = tmp->GetMaximumBin(); 
+  double cont = tmp->GetBinCenter(mb); 
+  l0->SetY2(max); l1->SetY2(max); l2->SetY2(max); l3->SetY2(max);
+  TF1 *fit = new TF1("gaus0","gaus",cont-0.25,cont+0.25); 
+  fit->SetParameters(max,cont,1,1000,max/3);
+  tmp->Fit("gaus0","QR"); 
+  x[count]=run; 
+  pos[count]=fit->GetParameter(1); 
+  sig[count]=TMath::Abs(fit->GetParameter(2)); 
+  tmp->Draw();
+  l0->Draw("same");
+  l1->Draw("same");
+  l2->Draw("same");
+  l3->Draw("same");
+  c1->Print(Form("diff_phys_%d.png",run));
+  //c1->Print(Form("diff_%d.C",run)); 
+  count++;
+}
+}
+
