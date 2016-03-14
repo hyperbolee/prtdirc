@@ -5,6 +5,7 @@
 # (full or avg LUT) in a given directory
 
 # most useful function eva
+start_time=$(date +%s)
 waitForMe ()
 {
     while : 
