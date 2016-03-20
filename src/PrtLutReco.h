@@ -24,41 +24,42 @@ class PrtLutReco{
 
 public:
 
-  // Standard constructors
-  PrtLutReco(TString infile, TString lutfile, Int_t verbose=0);
+	// Standard constructors
+	PrtLutReco(TString infile, TString lutfile, Int_t verbose=0);
 
-  // Destructor
-  ~PrtLutReco();
-  void Run(Int_t start=0, Int_t end=0);
+	// Destructor
+	~PrtLutReco();
+	void Run(Int_t start=0, Int_t end=0);
 
 private:
-  Bool_t FindPeak(Double_t& cherenkovreco, Double_t& spr,Double_t a);
-  Int_t FindPdg(Double_t mom, Double_t cangle);
-  void FitRing(Double_t& x0, Double_t& y0, Double_t& theta);
-  Int_t fDetectorID;  
-  Double_t fBboxNum,fPipehAngle,fDphi,fBarPhi;
+	Bool_t FindPeak(Double_t& cherenkovreco, Double_t& spr,Double_t a);
+	Int_t FindPdg(Double_t mom, Double_t cangle);
+	void FitRing(Double_t& x0, Double_t& y0, Double_t& theta);
+	Int_t fDetectorID;  
+	Double_t fBboxNum,fPipehAngle,fDphi,fBarPhi;
 
-  TClonesArray *fLut;
-  TClonesArray *fTrackInfoArray;
+	TClonesArray *fLut;
+	TClonesArray *fTrackInfoArray;
 
-  TFile *fFile; 
-  TTree *fTree;
-  TChain *fChain;
+	TFile *fFile; 
+	TTree *fTree;
+	TChain *fChain;
 
-  PrtEvent* fEvent;
-  PrtHit fHit;
+	PrtEvent* fEvent;
+	PrtHit fHit;
   
-  // Set the parameters to the default values.
-  void SetDefaultParameters();
+	// Set the parameters to the default values.
+	void SetDefaultParameters();
   
-  // Verbosity level
-  Int_t fVerbose;
-  Int_t nevents;
-  TString fInputFile;
-  TH1F *fHist;
-  TF1 *fFit;
-  TSpectrum *fSpect;
-
+	// Verbosity level
+	Int_t fVerbose;
+	Int_t nevents;
+	TString fInputFile;
+	TH1F *fHist;
+	TF1 *fFit;
+	TSpectrum *fSpect;
+	Double_t fAngleP;
+	Double_t fAnglePi;
 };
 
 #endif

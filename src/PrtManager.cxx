@@ -9,7 +9,7 @@
 PrtManager * PrtManager::fInstance= NULL;
 
 PrtManager::PrtManager(G4String outfile, G4int runtype){
-  TString filename = outfile;
+  TString filename = outfile.c_str();
   fOutName = filename; 
   fOutName = fOutName.Remove(fOutName.Last('.'));
   fRunType = runtype;
@@ -53,6 +53,7 @@ PrtManager::PrtManager(G4String outfile, G4int runtype){
   fShift = 150;
   fTest1 = 0;
   fTest2 = 0;
+  fTest3 = 0;
   fLens = 0;
   fMcpLayout = 2014;
   fBeamDimension = 0;
@@ -61,6 +62,7 @@ PrtManager::PrtManager(G4String outfile, G4int runtype){
   fPrismStepY=0;
   fBeamX=0;
   fBeamZ=-1;
+  fTimeRes=0.2;
   fInfo="";
 
   fnX1 = TVector3(1,0,0);   
@@ -97,6 +99,7 @@ void PrtManager::AddEvent(PrtEvent event){
     fEvent->SetPrismStepY(fPrismStepY);
     fEvent->SetBeamX(fBeamX);
     fEvent->SetBeamZ(fBeamZ);
+    fEvent->SetTimeRes(fTimeRes);
     fEvent->SetInfo(fInfo);
   }
 }
@@ -116,7 +119,7 @@ void PrtManager::AddHit(PrtHit hit){
       ((PrtLutNode*)(fLut->At(id)))->
 	AddEntry(id, fMomentum, hit.GetPathInPrizm(),
 		 hit.GetNreflectionsInPrizm(),
-		 hit.GetLeadTime(),hit.GetGlobalPos(),hit.GetDigiPos());
+		 hit.GetLeadTime(),hit.GetLocalPos(),hit.GetDigiPos());
     }
   }
 }

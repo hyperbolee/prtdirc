@@ -45,7 +45,7 @@ public:
   void SetRunType(int val){ fRunType = val; }
   void SetPhysList(int val){ fPhysList = val; }
   void SetGeometry(int val){ fGeometry = val; }
-  void SetBeamDimension(int val){ fBeamDimension = val; }
+  void SetBeamDimension(double val){ fBeamDimension = val; }
   void SetRadiator(int val){ fRadiator = val; }
   void SetLens(int val){ fLens = val; }
   void SetMcpLayout(int val){ fMcpLayout = val; }
@@ -59,10 +59,12 @@ public:
   void SetShift(double val){ fShift = val; }
   void SetTest1(double val){ fTest1 = val; }
   void SetTest2(double val){ fTest2 = val; }
+  void SetTest3(double val){ fTest3 = val; }
   void SetPrismStepX(double val){ fPrismStepX = val; }
   void SetPrismStepY(double val){ fPrismStepY = val; }
   void SetBeamX(double val){ fBeamX = val; }
   void SetBeamZ(double val){ fBeamZ = val; }
+  void SetTimeRes(double val){ fTimeRes = val; }
   void SetInfo(TString val){ fInfo = val; }
   void AddInfo(TString val){ fInfo += val + "\n"; }
 
@@ -70,7 +72,7 @@ public:
   int GetRunType(){ return fRunType; }
   int GetPhysList(){ return fPhysList; }
   int GetGeometry(){ return fGeometry; }
-  int GetBeamDinsion(){ return fBeamDimension; }
+  double GetBeamDinsion(){ return fBeamDimension; }
   int GetRadiator(){ return fRadiator; }
   int GetLens(){ return fLens; }
   int GetMcpLayout(){ return fMcpLayout; }
@@ -84,10 +86,12 @@ public:
   double GetShift(){ return fShift; }
   double GetTest1(){ return fTest1; }
   double GetTest2(){ return fTest2; }
+  double GetTest3(){ return fTest3; }
   double GetPrismStepX(){ return fPrismStepX; }
   double GetPrismStepY(){ return fPrismStepY; }
   double GetBeamX(){ return fBeamX; }
   double GetBeamZ(){ return fBeamZ; }
+  double GetTimeRes(){ return fTimeRes; }
   TString GetOutName(){return fOutName;}
   TString GetInfo() { return fInfo; }
 
@@ -103,7 +107,7 @@ private:
   double fRadiatorW;
   double fRadiatorH;
   int fParticle;
-  int fBeamDimension;
+  double fBeamDimension;
   TVector3 fMomentum;
   TClonesArray *fLut;
   TClonesArray *fTrackInfoArray;
@@ -111,10 +115,12 @@ private:
   double fShift;
   double fTest1;
   double fTest2;
+  double fTest3;
   double fPrismStepX;
   double fPrismStepY;
   double fBeamX;
   double fBeamZ;
+  double fTimeRes;
   TString fOutName;
   TString fInfo;
 
