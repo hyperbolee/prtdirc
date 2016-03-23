@@ -158,9 +158,17 @@ then
 		runname=${path}/sim_${lensnm}_${angle}.root
 		recname=${path}/reco/reco_${lensnm}_${angle}
 		lutname=../data/lut_${lensnm}
+		if [ -f ${lutname}.root ]
+		then
+			# make full reco if LUT exists
+			./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${runname} -o ${recname}.root >> /dev/null &
+		fi
+		waitForMe ${cores} # hold your horses!
+
 		if [ -f ${lutname}_cs_avr.root ]
 		then
 			# make charge-sharing reco if LUT exists
+			recname=${path}/reco/cs/reco_${lensnm}_${angle}
 			./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_cs_avr.root -i ${runname} -o ${recname}_cs_avr.root >> /dev/null &
 		fi
 		waitForMe ${cores} # hold your horses!
@@ -168,17 +176,10 @@ then
 		if [ -f ${lutname}_avr.root ]
 		then
 			# make averaged reco if LUT exists
+			recname=${path}/reco/avr/reco_${lensnm}_${angle}
 			./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${runname} -o ${recname}_avr.root >> /dev/null &
 		fi
 		waitForMe ${cores} # hold your horses!
-
-		if [ -f ${lutname}.root ]
-		then
-			# make full reco if LUT exists
-			./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${runname} -o ${recname}.root >> /dev/null &
-		fi
-
-		waitForMe ${cores} # hold 'em somemore!
 
 	done
 	wait

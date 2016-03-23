@@ -176,7 +176,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
 	Double_t  bar(0), tTof1(0), tTof2(0), tTrig(0), tTrueC(0), tX(0), tY(0);
-	Double_t tTheta(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0);
+	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0);
 
     // counter channels
 	int tof1_chan =  960;
@@ -191,15 +191,16 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("x",&tX,"tX/D"); // x position on detector
 	lTree->Branch("y",&tY,"tY/D"); // y position on detector
 	lTree->Branch("chan",&tChan,"tChan/I"); // channel number
-	lTree->Branch("PID",&tPID,"tPID/I"); // particle ID based on timing
-	lTree->Branch("npi",&tPi,"tPi/I"); // number of pions processed
-	lTree->Branch("nprot",&tProt,"tProt/I"); // number of protons processed
-	lTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections in prizm
+	lTree->Branch("PID",&tPID,"tPID/I"); // particle ID
+	lTree->Branch("npi",&tPi,"tPi/I"); // number of pions
+	lTree->Branch("nprot",&tProt,"tProt/I"); // number of protons
+	lTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections
 	lTree->Branch("path",&tPath,"tPath/D"); // path ID in prizm
-	lTree->Branch("LUTnref",&tNRefLUT,"tNRefLUT/I"); // number of reflections in prizm
-	lTree->Branch("LUTpath",&tPathLUT,"tPathLUT/D"); // path ID in prizm
+	lTree->Branch("LUTnref",&tNRefLUT,"tNRefLUT/I"); // reflections
+	lTree->Branch("LUTpath",&tPathLUT,"tPathLUT/D"); // path ID
 	lTree->Branch("hits",&tHits,"tHits/I");
-	lTree->Branch("theta",&tTheta,"tTheta/D"); // reconstructed theta_C
+	lTree->Branch("theta",&tTheta,"tTheta/D"); // theta_C
+	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("bar",&bar,"bar/D"); // angle between bar and beam
 	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
 	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
@@ -351,6 +352,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			{
 				truemom = fHit.GetMomentum();
 				tTrueC  = truemom.Theta();
+				tLambda = fHit.GetTotTime();
 				//printf("dir mom: %f\n",dir.Theta());
 				//printf("truemom: %f\n",truemom.Theta());
 			}

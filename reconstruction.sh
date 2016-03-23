@@ -103,20 +103,6 @@ do
 	fi
 
 	lutname=../data/lut_${lensnm}
-	if [ -f ${lutname}_cs_avr.root ]
-	then
-		# make charge-sharing reco if LUT exists
-		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_cs_avr.root -i ${FILE} -o ${recoout}_cs_avr.root >> /dev/null &
-	fi
-	waitForMe ${cores} # hold your horses!
-
-	if [ -f ${lutname}_avr.root ]
-	then
-		# make averaged reco if LUT exists
-		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${FILE} -o ${recoout}_avr.root >> /dev/null &
-	fi
-	waitForMe ${cores} # hold your horses!
-
 	if [ -f ${lutname}.root ]
 	then
 		# make full reco if LUT exists
@@ -124,9 +110,25 @@ do
 	fi
 	waitForMe ${cores} # hold your horses!
 
+	if [ -f ${lutname}_cs_avr.root ]
+	then
+		# make charge-sharing reco if LUT exists
+		recoout=${path}/reco/cs/reco_${runname}
+		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_cs_avr.root -i ${FILE} -o ${recoout}_cs_avr.root >> /dev/null &
+	fi
+	waitForMe ${cores} # hold your horses!
+
+	if [ -f ${lutname}_avr.root ]
+	then
+		# make averaged reco if LUT exists
+		recoout=${path}/reco/avr/reco_${runname}
+		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${FILE} -o ${recoout}_avr.root >> /dev/null &
+	fi
+	waitForMe ${cores} # hold your horses!
+
 done
 
 # make single root file after reconstruction
-hadd -f ${path}/reco/reco_beam_${study}.root  ${path}/reco/*spr.root
+# hadd -f ${path}/reco/reco_beam_${study}.root  ${path}/reco/*spr.root
 printf "\n"
 
