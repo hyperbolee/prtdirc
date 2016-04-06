@@ -31,7 +31,7 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	//tof1Cut(h,selection);
 	//tof2Cut(h,selection);
 	//trigCut(h,selection);
-	//cout << "data selection:\t" << selection << endl;
+	cout << "data selection:\t" << selection << endl;
     
 	TTreeFormula* tform 
 		= new TTreeFormula("tree selection",selection,h);
@@ -40,16 +40,18 @@ void drawFish(TString infile="../build/reco_spr.root", int save = 0)
 	initDigi();
 	SetRootPalette(1);
 	int badC(0);
-	for (Int_t ientry=0; ientry<40; ientry++)
-			 //h->GetEntries(); ientry++)
+	cout << h->GetEntries() << endl;
+	//for (Int_t ientry=0; ientry<40; ientry++)
+	for (Int_t ientry=0; ientry<h->GetEntries(); ientry++)
 	{
+		//cout << "da fuck???" << endl;
 		h->GetEntry(ientry);
-		if(tform->EvalInstance()==0) // skip if "bad" entry
+		/*if(tform->EvalInstance()==0) // skip if "bad" entry
 		{
 			badC++;
 			continue;
-		}
-	    
+			}*/
+	    //cout << "filling hist" << endl;
 	    fhDigi[mcpid]->Fill(pixid%8, pixid/8);
 	}
 	//cout << "percent cut:\t" << 100*double(badC)/h->GetEntries() << endl;
