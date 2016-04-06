@@ -25,6 +25,7 @@
 #include <TLegend.h>
 #include "../../prttools/prttools.C"
 
+
 using std::cout;
 using std::endl;
 
@@ -78,7 +79,7 @@ PrtLutReco::PrtLutReco(TString infile, TString lutfile, Int_t verbose)
 	  fSavePath = opath+Form("/%ds/%d",prt_data_info.getStudyId(),prt_data_info.getFileId());
 	  }
     
-	  }else */
+	  }else*/
 	fSavePath="auto";
 	std::cout<<"fSavePath  "<< fSavePath <<std::endl;    
 
@@ -99,13 +100,17 @@ Int_t cluster[15][65];
 Int_t lneighbours[65];
 Int_t lsize(0);
 
-Int_t getneighbours(Int_t m, Int_t p){
+Int_t getneighbours(Int_t m, Int_t p)
+{
 	for(Int_t i=0; i<65; i++) if(p==lneighbours[i]) return -1;
 	lneighbours[lsize]=p;
 	lsize++;
-	for(Int_t t=0; t<65; t++){
-		if(mcpdata[m][t]){
-			for(Int_t i=0; i<65; i++) if(t==lneighbours[i]) continue;
+	for(Int_t t=0; t<65; t++)
+	{
+		if(mcpdata[m][t])
+		{
+			for(Int_t i=0; i<65; i++) 
+				if(t==lneighbours[i]) continue;
 			if((t==p-1 && p%8!=0) || (t==p+1 && p%8!=7) ||
 			   (t==p+8 && p<57) || (t==p-8 && p>8)) getneighbours(m,t);
 		}
@@ -113,9 +118,12 @@ Int_t getneighbours(Int_t m, Int_t p){
 	return lsize;
 }
 
-void getclusters(){
-	for(Int_t m=0; m<15; m++){
-		for(Int_t p=0; p<65; p++){
+void getclusters()
+{
+	for(Int_t m=0; m<15; m++)
+	{
+		for(Int_t p=0; p<65; p++)
+		{
 			if(mcpdata[m][p])  cluster[m][p] = getneighbours(m,p);
 			lsize=0;
 			for(Int_t i=0; i<65; i++) lneighbours[i]=0;
@@ -123,12 +131,34 @@ void getclusters(){
 	}
 }
 
+// 
+#include <iterator>
+int tofpix1[] = {54,56,71,73}; // 2x2 center
+int tofpix2[] = {52,53,55,57,58,59,68,69,70,72,74,75}; // 4x4 second  "ring"
+int tofpix3[] = {34,36,38,40,42,44,50,51,60,61,66,65,76,77,83,85,87,89,91,93}; // 6x6 third "ring"
+int getTOFring( int chan )
+{
+	chan -= 960; // shift lowest pixel to zero
+	if(chan>95) chan-=96; // shift second tof to same range
+
+	// check if channel is in each "ring" of TOF
+	bool r1 = std::find(std::begin(tofpix1), std::end(tofpix1), chan) != std::end(tofpix1);
+	bool r2 = std::find(std::begin(tofpix2), std::end(tofpix2), chan) != std::end(tofpix2);
+	bool r3 = std::find(std::begin(tofpix3), std::end(tofpix3), chan) != std::end(tofpix3);
+
+	if(r1) return 1;
+	if(r2) return 2;
+	if(r3) return 3;
+	
+	return 4;
+}
+
  
 //-------------- Loop over tracks ------------------------------------------
 void PrtLutReco::Run(Int_t start, Int_t end){
 	cout << "Start Reco run" << endl;
 
-	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz,truemom;
+	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz;
 	Double_t cangle,spr,tangle,boxPhi,weight,evtime,bartime, lenz,dirz,luttheta, barHitTime, hitTime;
 	Int_t pdgcode, evpointcount=0;
 	Bool_t reflected = kFALSE;
@@ -143,7 +173,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	Int_t lensID(0);
 	Double_t beam(0);
 	Double_t theta(0),phi(0), trr(0), nph(0), yield(0),
-		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0);
+		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0),test3(0),separation(0);
 	Double_t minChangle(0);
 	Double_t maxChangle(1);
 	Double_t rad = TMath::Pi()/180.;
@@ -161,6 +191,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	tree.Branch("nph",&nph,"nph/D");
 	tree.Branch("yield",&yield,"yield/D");
 	tree.Branch("cangle",&cangle,"cangle/D");
+	tree.Branch("separation",&separation,"separation/D");
 	tree.Branch("par3",&par3,"par3/D");
 	tree.Branch("par4",&par4,"par4/D");
 	tree.Branch("par5",&par5,"par5/D");
@@ -175,7 +206,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	test1 = PrtManager::Instance()->GetTest1();
 
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
-	Double_t  bar(0), tTof1(0), tTof2(0), tTrig(0), tTrueC(0), tX(0), tY(0);
+	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0);
 	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0);
 
     // counter channels
@@ -201,14 +232,13 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("hits",&tHits,"tHits/I");
 	lTree->Branch("theta",&tTheta,"tTheta/D"); // theta_C
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
-	lTree->Branch("bar",&bar,"bar/D"); // angle between bar and beam
+	lTree->Branch("track",&prtangle,"prtangle/D"); // track
 	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
 	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
 	lTree->Branch("diff",&tDiff,"tDiff/D"); // difference in times
 	lTree->Branch("tof1",&tTof1,"tTof1/D"); // timing of TOF1
 	lTree->Branch("tof2",&tTof2,"tTof2/D"); // timing of TOF2
 	lTree->Branch("trig",&tTrig,"tTrig/D"); // timing of TRIG
-	lTree->Branch("trueC",&tTrueC,"tTrueC/D");
 	
 	// tree for hit-by-hit information (timing, etc)
 	TTree *hTree = new TTree("hits","hit by hit variables");
@@ -218,22 +248,22 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	hTree->Branch("y",&tY,"tY/D"); // y position on detector
 	hTree->Branch("chan",&tChan,"tChan/I");
 	hTree->Branch("PID",&tPID,"tPID/I");
-	hTree->Branch("npi",&tPi,"tPi/I"); // number of pions processed
-	hTree->Branch("nprot",&tProt,"tProt/I"); // number of protons processed
-	hTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections in prizm
+	hTree->Branch("npi",&tPi,"tPi/I"); // number of pions
+	hTree->Branch("nprot",&tProt,"tProt/I"); // number of protons
+	hTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections
 	hTree->Branch("path",&tPath,"tPath/D"); // path ID in prizm
-	hTree->Branch("bar",&bar,"theta/D");
+	hTree->Branch("track",&prtangle,"prtangle/D");
+	hTree->Branch("lambda",&tLambda,"tLambda/D");
 	hTree->Branch("time",&tTime,"tTime/D");
 	hTree->Branch("tof1",&tTof1,"tTof1/D");
 	hTree->Branch("tof2",&tTof2,"tTof2/D");
 	hTree->Branch("trig",&tTrig,"tTrig/D");
-	hTree->Branch("trueC",&tTrueC,"tTrueC/D");
   
 	Int_t nEvents = fChain->GetEntries();
 	if(end==0) end = nEvents;
   
 	std::cout<<"Run started for ["<<start<<","<<end <<"]"<<std::endl;
-	Int_t nsHits(0),nsEvents(0),nsYield(0),studyId(0),nHits(0), ninfit(0);
+	Int_t nsHits(0),nsEvents(0),nsYield(0),studyId(0),nHits(0),ninfit(0);
 	Bool_t loopoverall(false);
 	if(start<0)
 	{
@@ -245,42 +275,43 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	cout << "start\t" << start << endl;
 	cout << "nEvents\t" << nEvents << endl;
 	bool simulation(false);
-	int etot(0), htot(0), ntot(0);
-	for (Int_t ievent=start; ievent<nEvents; ievent++){ //&& ievent<end
-		etot++;
+	for (Int_t ievent=start; ievent<end; ievent++)
+	{
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
-
-		if(fEvent->GetType()==1)
-			simulation=true;
+		simulation = fEvent->GetType();
 
 		if(ievent%1000==0) 
 			std::cout<<"Event # "<< ievent << " has "<< nHits <<" hits"<<std::endl;
-		if(ievent==0){
+
+		if(ievent==0)
+		{
 			tree.SetTitle(fEvent->PrintInfo());
 			prtangle = fEvent->GetAngle();
 			studyId = fEvent->GetGeometry();
 			lensID = fEvent->GetLens();
 			beam = fEvent->GetMomentum().z();
-			if(simulation)
-			{
+
+			if(!simulation)
+			{ // beam center correction for data
 				momInBar.RotateY(TMath::Pi()-prtangle*rad-0.0045);
 				momInBar.RotateX(0.0045);
 			}
 			else momInBar.RotateY(TMath::Pi()-prtangle*rad);
 			// momInBar = fEvent->GetMomentum().Unit();
 
-			if(fVerbose==3){
+			if(fVerbose==3)
+			{
 				cz = momInBar.Unit();
 				cz = TVector3(-cz.X(),cz.Y(),cz.Z());
 			}
 		}
-		//--------------------
+		
 		Double_t momentum=fEvent->GetMomentum().Mag();
 		int tofPid(0);
 		if(simulation) momentum /= 1000;
 		tofPid=fEvent->GetParticle();
-		if(tofPid==212) tofPid=211;
+		if(tofPid==212) tofPid=211; //why?
 
 
 		Int_t pdg[]={11,13,211,321,2212};
@@ -299,72 +330,83 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		gF1->SetParameter(2,sigma);
 		gF2->SetParameter(2,sigma);
 
-    
-		//if(tofPid!=2212) continue;
-
-		if( fEvent->GetType()==0){
-			if(fabs(fEvent->GetMomentum().Mag()-7)<0.1){
-				if( fEvent->GetParticle()==2212 && fEvent->GetTest1()<175.6 ) continue;
-				if( fEvent->GetParticle()==211  && fEvent->GetTest1()>175.1 ) continue;
+		if(!simulation)
+		{
+			if(fabs(momentum-7)<0.1) //why?
+			{
+				if( tofPid==2212 && 
+					fEvent->GetTest1()<175.6 ) continue;
+				if( tofPid==211  && 
+					fEvent->GetTest1()>175.1 ) continue;
 			}
 		}
 
 		if(nHits<5) continue;
-//-------------------------
-		htot+=nHits;
+
 		tHits = nHits;
 		tTof1 = tTof2 = tTrig = 0;
-		// get counter times for this event
+		int rt1(5), rt2(5); // assume outter ring
+		// use this loop for tighter cuts 
 		for(Int_t ihit=0; ihit<nHits; ihit++)
 		{
 			fHit = fEvent->GetHit(ihit);
-			hitTime = fHit.GetLeadTime();
+			
 			int chan = fHit.GetChannel();
+			int ring = getTOFring(chan);
 
-			if(chan == tof1_chan) tTof1 = hitTime;
-			if(chan == tof2_chan) tTof2 = hitTime;
-			if(chan == trig_chan) tTrig = hitTime;
+			if(992<=chan && chan<=1055)
+				if(ring<rt1) rt1 = ring;
+			
+			if(1088<=chan && chan<=1151)
+				if(ring<rt2) rt2 = ring;
 
-			// get mcp and pix for hTree
-			//tMCP = fHit.GetMcpId();
-			//tPix = fHit.GetPixelId()-1;
-			//hTree->Fill();
+			//if(ievent==17)
+				//std::cout << Form("channel %d, r1 %d, r2 %d",chan, rt1, rt2) << std::endl;
+
+			//if(chan == tof1_chan) tTof1 = hitTime;
+			//if(chan == tof2_chan) tTof2 = hitTime;
+			//if(chan == trig_chan) tTrig = hitTime;
 
 		}
+		tTof1 = rt1;
+		tTof2 = rt2;
+		//if(rt2==5 || rt1==5)
+		//std::cout <<Form("%d: (%d,%d)",ievent,rt1,rt2)<< std::endl;
 		
 		tPID  = fEvent->GetParticle();
 		if(tPID>1000) tProt++;
 		else tPi++;
-		for(Int_t h=0; h<nHits; h++) {
+		for(Int_t h=0; h<nHits; h++)
+		{
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
 
-			// get mcp and pix for hTree
+			// set hit information for trees
 			tTime = hitTime;
 			tMCP  = fHit.GetMcpId();
 			tPix  = fHit.GetPixelId()-1;
 			tChan = fHit.GetChannel();
 			tX    = fHit.GetGlobalPos().X();
 			tY    = fHit.GetGlobalPos().Y();
+			tMCP  = fHit.GetMcpId();
+			tPix  = fHit.GetPixelId() - 1;
 
-			// for simulation, save exact thetaC for comparison
 			if(simulation)
-			{
-				truemom = fHit.GetMomentum();
-				tTrueC  = truemom.Theta();
 				tLambda = fHit.GetTotTime();
-				//printf("dir mom: %f\n",dir.Theta());
-				//printf("truemom: %f\n",truemom.Theta());
-			}
 
 			{ //time cuts
-				if(prtangle<=80){
+				if(prtangle<=80)
+				{
 					if(hitTime<11 || hitTime>35) continue;
 					reflected = kTRUE;
-				}else if(prtangle>=95){
+				}
+				else if(prtangle>=95)
+				{
 					if(hitTime<3 || hitTime>20) continue;
 					reflected = kFALSE;
-				}else{
+				}
+				else
+				{
 					if(hitTime<13.5)  reflected = kFALSE; //13.5
 					else reflected = kTRUE;
 				}
@@ -372,33 +414,34 @@ void PrtLutReco::Run(Int_t start, Int_t end){
       
 			Double_t radiatorL = 1250; //bar
 
-			if(studyId==152 || studyId==153 || studyId==161 || studyId==162 || studyId==171 || studyId==172 || studyId==173 || studyId==1175 || studyId==176 || studyId==177 || studyId==178){
+			if(studyId==152 || 
+			   studyId==153 || 
+			   studyId==161 || 
+			   studyId==162 || 
+			   studyId==171 || 
+			   studyId==172 || 
+			   studyId==173 || 
+			   studyId==1175 || 
+			   studyId==176 || 
+			   studyId==177 || 
+			   studyId==178)
 				radiatorL = 1224.9; //plate
-			}
+			
 
 			Double_t z =  fEvent->GetBeamZ();
-			if( fEvent->GetType()==1){
+			if(simulation)
 				lenz = radiatorL/2.-fHit.GetPosition().Z();
-			}else{
+			else
 				lenz = z-1/tan(prtangle*rad)*(122+(z-96)/tan((135-0.5*prtangle)*rad))+25; // +25 for correction to data
-				// Double_t b = 122*tan(0.5*((prtangle-90)*rad)); 
-				// Double_t lenz = (z-96+b)/cos((prtangle-90)*rad)+b+96;     
-			}
+			
 
-			if(fVerbose==3){
+			if(fVerbose==3)
+			{
 				TVector3 cd = fHit.GetMomentum();
 				fHist5->Fill(cd.Theta()*TMath::Sin(cd.Phi()),cd.Theta()*TMath::Cos(cd.Phi()));
 			}
 
-			// TVector3 vv = fHit.GetMomentum();
-			// vv.RotateY(prtangle*rad);
-			// dirz = vv.Z();
-			// if(dirz<0) reflected = kTRUE;
-			// else reflected = kFALSE;
-
-
-			tMCP  = fHit.GetMcpId();
-			tPix  = fHit.GetPixelId() - 1;
+			
 			if(reflected) lenz = 2*radiatorL - lenz;
 			Int_t ch = map_mpc[tMCP][tPix];
 			if(badcannel(ch)) continue;
@@ -409,15 +452,16 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			if(csCorr) // if not charge-sharing LUT don't bother
 			{
 				for(Int_t h=0; h<nHits; h++) {
-					Int_t pid=fEvent->GetHit(h).GetPixelId();
+					Int_t pid=fEvent->GetHit(h).GetPixelId()-1;
 					Int_t mid=fEvent->GetHit(h).GetMcpId();
 					Double_t tdif=fabs(hitTime-fEvent->GetHit(h).GetLeadTime());
+				    
 					if(mid!=tMCP || pid==piid || tdif>0.3) continue;
-					if(pid==piid-1 && piid%8!=0) y-=1;
-					if(pid==piid+1 && piid%8!=7) y+=1;
+					if(pid==piid-1 && piid%8!=0) x-=1;
+					if(pid==piid+1 && piid%8!=7) x+=1;
 
-					if(pid==piid+8 && piid<57) x-=1;
-					if(pid==piid-8 && piid>8)  x+=1;
+					if(pid==piid-8 && piid>=8) y-=1;
+					if(pid==piid+8 && piid<56) y+=1;
 				}
       
 				if(x== 0 && y== 0) nedge=0;
@@ -430,8 +474,9 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 				if(x== 0 && y==-1) nedge=7;
 				if(x==-1 && y==-1) nedge=8;
 
-				//cout<< tPix << " nedge "<<nedge <<" x " <<x << "  y  "<<y<<endl;
+				//cout<< tMCP << tPix << " nedge "<<nedge <<" x " <<x << "  y  "<<y<<endl;
 			}
+
 			Int_t sensorId = 100*fHit.GetMcpId()+fHit.GetPixelId();
 			if(sensorId==1) continue;
 
@@ -443,20 +488,14 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 				
 				if(csCorr)
 				    dird = fLutNode[sensorId]->GetEntryCs(i,nedge);
-				else dird = fLutNode[sensorId]->GetEntry(i);
+				else 
+					dird = fLutNode[sensorId]->GetEntry(i);
+
 				evtime = fLutNode[sensorId]->GetTime(i);
 				Int_t pathid = fLutNode[sensorId]->GetPathId(i);
-				//if(pathid!=fHit.GetPathInPrizm()) continue;
-				//if(fLutNode[sensorId]->GetNRefl(i)!=1 ) continue;
-				//if(pathid != 130000 && pathid != 199000) continue;
-				//std::cout<<"pathid "<< pathid <<std::endl;
-
 	
-				for(int u=0; u<2; u++){
-					// if((pathid==190000 || pathid==210000) && u == 0) continue; //one from left-right
-					// if((pathid==290000 || pathid==310000) && u == 0) continue; //two from left-right
-					// if((pathid==130000 || pathid==199000) && u == 0) continue; //from up-bottom
-
+				for(int u=0; u<2; u++)
+				{
 					if(u == 0) dir = dird;
 					if(u == 1) dir.SetXYZ( -dird.X(), dird.Y(), dird.Z());
 					if(u == 2) dir.SetXYZ( dird.X(),-dird.Y(),  dird.Z()); //no need when no divergence in vertical plane
@@ -475,40 +514,42 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 					if(fabs((bartime+evtime)-hitTime)>test1) continue;
 					fHist3->Fill(fabs((bartime+evtime)),hitTime);
-					tangle = momInBar.Angle(dir);	  
-					//if(tangle>TMath::PiOver2()) tangle = TMath::Pi()-tangle;
+					tangle = momInBar.Angle(dir);
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
 						if(0.7<tangle && tangle<0.9)
+						{
 							if(fabs((bartime+evtime)-hitTime)<3)
 								isGoodHit=true;
+							//if(studyId<160 && fabs(tangle-0.815)<0.07) isGoodHit=true; //test2
+							//if(studyId>=160) isGoodHit=true;
+						}
 
-						/*
-						  to get entry for true path in simulation:
-						  if(fEventType==1)
-						  truemom = fHit.GetMomentum() // wrong momentum vector
-						  truethC = momInBar.Angle(truemom)
-						*/
+						if(true && tangle>0.4 && tangle<0.9 ){
+							Double_t f1 = gF1->Eval(tangle);
+							Double_t f2 = gF2->Eval(tangle);
+							// if(f1<noise) f1 =noise;
+							// if(f2<noise) f2 =noise;
+							sum1 += -TMath::Log(f1+noise);
+							sum2 += -TMath::Log(f2+noise);
+
+							// sum1 += -TMath::Log(fabs((fAngleP-tangle)/f1));
+							// sum2 += -TMath::Log(fabs((fAnglePi-tangle)/f2));	      
+						}
+
 						tNRef = fHit.GetNreflectionsInPrizm();
 						tNRefLUT = fLutNode[sensorId]->GetNRefl(i);
 						tPath = fHit.GetPathInPrizm();
 						tPathLUT = pathid;
 						tTheta = tangle;
-						bar    = fEvent->GetAngle();
 						tTime  = hitTime;
 						tExpt  = bartime + evtime;
 						tDiff  = tTime - tExpt;
-
-						/*tTof1  = tTime - tTof1;
-						  tTof2  = tTof1;
-						  tTrig  = tTime - tTof1;*/
-						// if I use time-count it will give
-						// positive and negative peaks, revisit
 							
 						lTree->Fill();
-						ntot++;
 
-						if(fVerbose==3){	      
+						if(fVerbose==3)
+						{	      
 							TVector3 rdir = TVector3(-dir.X(),dir.Y(),dir.Z());
 							rdir.RotateUz(cz);	      
 							Double_t phi = rdir.Phi();
@@ -527,45 +568,97 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			if(isGoodHit) nsHits++; 	
 		}
 
-		//cout << "nsHits\t" << nsHits << endl;
-		//cout << "nsEvents\t" << nsEvents << endl;
-		//cout << "nph\t" << (Double_t)nsHits/(Double_t)nsEvents << endl;
-		if(++nsEvents>=end || fVerbose>4){
-			if(loopoverall){
+		for(Int_t j=0; j<15; j++){
+			for(Int_t i=0; i<65; i++){
+				mcpdata[j][i]=0;
+				cluster[j][i]=0;
+			}	
+	}    
+
+		Double_t sum = sum1-sum2;
+		if(sum!=0){
+			if(tofPid==2212) hLnDiffP->Fill(sum);
+			if(tofPid==211)  hLnDiffPi->Fill(sum);
+		}
+
+		if(++nsEvents>=end || fVerbose>4)
+		{
+			if(loopoverall)
+			{
 				FindPeak(cangle,spr, prtangle);
-				nph = nsHits/(Double_t)nsEvents;
-				yield = nsYield/(Double_t)nsEvents;
+				nph = nsHits/(Double_t)ninfit;
+				yield = nsYield/(Double_t)ninfit;
 				spr = spr*1000;
 				trr = spr/sqrt(nph);
 				theta = fEvent->GetAngle();
 				par3 = fEvent->GetTest1();
+				std::cout<<"p  "<<sum1 << "   pi "<<sum2 << "  s "<< sum<<std::endl;
 				std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
 				tree.Fill();
-				nsEvents=0;
-				nsHits=0;
-			}else break;
+			}
+			else break;
 		}
-		//Int_t pdgreco = FindPdg(fEvent->GetMomentum().Mag(), cherenkovreco);
 	}
   
-	FindPeak(cangle,spr, prtangle);
-	nph = nsHits/(Double_t)nsEvents;
-	yield = nsYield/(Double_t)nsEvents;
-	spr = spr*1000;
-	trr = spr/sqrt(nph);
-	theta = fEvent->GetAngle();
-	par3 = fEvent->GetTest1();
-	std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
-	tree.Fill();
-  
-	//tree.Write();
-	//lTree->Write();
-	//hTree->Write();
-	file.Write();
+	if(!loopoverall)
+	{
+		FindPeak(cangle,spr, prtangle);
+		nph = nsHits/(Double_t)nsEvents;
+		yield = nsYield/(Double_t)nsEvents;
+		spr = spr*1000;
+		trr = spr/sqrt(nph);
+		theta = fEvent->GetAngle();
+		par3 = fEvent->GetTest1();
+		std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
+		tree.Fill();
+	}
+	else
+	{
+		//if(!fVerbose) gROOT->SetBatch(1);
+		canvasAdd("r_lhood",800,400);
+		prt_normalize(hLnDiffP,hLnDiffPi);
+		hLnDiffP->SetLineColor(2);
 
-	cout << "total events\t" << etot << endl;
-	cout << "total hits  \t" << htot << endl;
-	cout << "total nodes \t" << ntot << endl;
+		TF1 *ff;
+		Double_t m1,m2,s1,s2; 
+		if(hLnDiffP->GetEntries()>10){
+			hLnDiffP->Fit("gaus","S");
+			ff = hLnDiffP->GetFunction("gaus");
+			m1=ff->GetParameter(1);
+			s1=ff->GetParameter(2);
+		}
+		if(hLnDiffPi->GetEntries()>10){
+			hLnDiffPi->Fit("gaus","S");
+			ff = hLnDiffPi->GetFunction("gaus");
+			m2=ff->GetParameter(1);
+			s2=ff->GetParameter(2);
+		}
+		separation = (fabs(m2-m1))/(0.5*(s1+s2));
+		std::cout<<"separation "<< separation <<std::endl;
+
+		//gStyle->SetOptFit(0);
+		//gStyle->SetOptStat(0);
+		
+		hLnDiffP->SetName(Form("s_%2.2f",separation));
+		hLnDiffP->Draw();
+		hLnDiffPi->SetLineColor(4);
+		hLnDiffPi->Draw("same");
+		canvasSave(1,0);
+		//waitPrimitive("r_lhood","w");
+		if(fVerbose) gROOT->SetBatch(0);
+		tree.Fill();
+	}
+	fHist0->Write();
+	fHist1->Write();
+	fHist2->Write();
+	fHist3->Write();
+	fHist4->Write();
+	fHist5->Write();
+	hLnDiffP->SetName("Psep");
+	hLnDiffP->Write();
+	hLnDiffPi->SetName("Pisep");
+	hLnDiffPi->Write();
+	file.Write();
 }
 
 Int_t g_num =0;
