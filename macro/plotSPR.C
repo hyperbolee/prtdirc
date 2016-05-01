@@ -6,6 +6,10 @@
 
 // whether or not to print histograms to files
 bool print = true;
+TString path = "../studies/bgsub/";
+TString cutpath = path+"pol3_3/";
+
+TFile *save = new TFile(cutpath+"C/plots.root","RECREATE");
 
 void fillGraphs(TString dirname, TString type, 
 				TGraph *&grSPR, TGraph *&grNPH, TGraph *&grANG)
@@ -46,8 +50,7 @@ void fillGraphs(TString dirname, TString type,
 		
 		// define spectrum and fit
 		TSpectrum *spec = new TSpectrum(10);
-		TF1 *gaus0 = new TF1("gaus0","gaus+pol0(3)");
-		
+				
 		// get peak of time distribution
 		TH1D *diff  = new TH1D("diff","diff",200,-5,5);
 		treco->Project("diff","diff","PID>1000");
@@ -79,14 +82,15 @@ void fillGraphs(TString dirname, TString type,
 		// fit spectrum, get sigma, and fill graph
 		char *fitOpt = "NQ";
 		if(print) fitOpt = "Q";
-		gaus0->SetParameters(con,mean,0.01,con/3);
+		TF1 *gaus0 = new TF1("gaus0","gaus+pol3(3)");
+		gaus0->SetParameters(con,mean,0.01,con/3,10,10,10);
 		gaus0->SetParName(1,"#theta_{C}");
 		gaus0->SetParName(2,"#sigma");
 		theta->Fit("gaus0",fitOpt,"",mean-0.03,mean+0.03);
 		sigma = gaus0->GetParameter(2);
 		grSPR->SetPoint(n,track,TMath::Abs(1000*sigma));
 		grNPH->SetPoint(n,track,nph);
-		grANG->SetPoint(n,track,trangle-mean);
+		grANG->SetPoint(n,track,1000*(trangle-mean));
 		
 		// print useful info
 		cout << "track\t" << track << endl;
@@ -102,9 +106,9 @@ void fillGraphs(TString dirname, TString type,
 		{
 			TCanvas *c_tmp = new TCanvas(); c_tmp->cd();
 			theta->Draw();
-			c_tmp->Print(Form("../studies/bgsub/%s_%.2f.png",type.Data(),track));
+			c_tmp->Print(cutpath+Form("%s_%.2f.png",type.Data(),track));
 
-			if(type=="sim")
+			if(type=="sim" && false)
 			{
 				// 1D histogram of wavelength from simulation
 				TH1D *lamb = new TH1D("lamb","lamb",600,300,600);
@@ -114,7 +118,7 @@ void fillGraphs(TString dirname, TString type,
 
 				lamb->SetTitle(Form("Wavelength, %.2f #theta_{track}",track));
 				lamb->Draw();
-				c_tmp->Print(Form("../studies/bgsub/sim_wvl_%.2f.png",track));
+				c_tmp->Print(path+Form("sim_wvl_%.2f.png",track));
 
 				
 				// set statbox position for 2D histogram
@@ -126,7 +130,7 @@ void fillGraphs(TString dirname, TString type,
 				treco->Project("wave","lambda:theta","PID>1000 && abs(diff)<1");
 				wave->SetTitle(Form("%.2f #theta_{C} vs. wavelength",track));
 				wave->Draw("colz");
-				c_tmp->Print(Form("../studies/bgsub/sim_wVt_%.2f.png",track));
+				c_tmp->Print(path+Form("sim_wVt_%.2f.png",track));
 				// clean up
 				delete lamb;
 				delete thits;
@@ -203,8 +207,8 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	leg->AddEntry(grSPRdat,"beam data", "lp");
 	leg->AddEntry(grSPRsim,"simulation", "lp");
 	leg->Draw();
-	if(print) c1->Print("../studies/bgsub/angle_vs_SPR.png");
-	if(print) c1->Print("../studies/bgsub/C/angle_vs_SPR.C");
+	if(print) c1->Print(cutpath+"angle_vs_SPR.png");
+	if(print) c1->Print(cutpath+"C/angle_vs_SPR.C");
 
 	// draw photon yield graphs
 	TCanvas *c2 = new TCanvas(); c2->cd();
@@ -222,15 +226,15 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	grNPHdat->Draw("PL");
 
 	leg->Draw();
-	if(print) c2->Print("../studies/bgsub/angle_vs_nph.png");
-	if(print) c2->Print("../studies/bgsub/C/angle_vs_nph.C");
+	if(print) c2->Print(path+"angle_vs_nph.png");
+	if(print) c2->Print(path+"C/angle_vs_nph.C");
 
 	// draw angle difference graphs
 	TCanvas *c3 = new TCanvas(); c3->cd();
 	grANGsim->GetXaxis()->SetRangeUser(0,180);
 	grANGsim->GetXaxis()->SetTitle("#theta_{track} [deg]");
-	grANGsim->GetYaxis()->SetRangeUser(-0.03,0.03);
-	grANGsim->GetYaxis()->SetTitle("calculated - measured #theta_{C} [rad]");
+	grANGsim->GetYaxis()->SetRangeUser(-10,20);
+	grANGsim->GetYaxis()->SetTitle("calculated - measured #theta_{C} [mrad]");
 	grANGsim->SetMarkerStyle(20);
 	grANGsim->SetMarkerColor(kBlue);
 	grANGsim->SetTitle("");
@@ -241,9 +245,16 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	grANGdat->Draw("PL");
 
 	leg->Draw();
-	if(print) c3->Print("../studies/bgsub/angle_vs_thetaCdiff.png");
-	if(print) c3->Print("../studies/bgsub/C/angle_vs_thetaCdiff.C");
+	if(print) c3->Print(cutpath+"angle_vs_thetaCdiff.png");
+	if(print) c3->Print(cutpath+"C/angle_vs_thetaCdiff.C");
 	
-	   
+	// save graphs to .root file
+	save->cd();
+	grSPRsim->Write("grSUBsim");
+	grSPRdat->Write("grSUBdat");
+	grANGsim->Write("grANGsim");
+	grANGdat->Write("grANGdat");
+	save->Write();
+
 } // end plotSPR.C
 

@@ -155,7 +155,7 @@ int getTOFring( int chan )
 
  
 //-------------- Loop over tracks ------------------------------------------
-void PrtLutReco::Run(Int_t start, Int_t end){
+void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	cout << "Start Reco run" << endl;
 
 	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz;
@@ -207,7 +207,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0);
-	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0);
+	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
 
     // counter channels
 	int tof1_chan =  960;
@@ -233,6 +233,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	lTree->Branch("theta",&tTheta,"tTheta/D"); // theta_C
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("track",&prtangle,"prtangle/D"); // track
+	lTree->Branch("aTrack",&assume,"assume/D"); // assumed track
 	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
 	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
 	lTree->Branch("diff",&tDiff,"tDiff/D"); // difference in times
@@ -253,6 +254,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	hTree->Branch("nref",&tNRef,"tNRef/I"); // number of reflections
 	hTree->Branch("path",&tPath,"tPath/D"); // path ID in prizm
 	hTree->Branch("track",&prtangle,"prtangle/D");
+	hTree->Branch("aTrack",&assume,"assume/D"); // assumed track
 	hTree->Branch("lambda",&tLambda,"tLambda/D");
 	hTree->Branch("time",&tTime,"tTime/D");
 	hTree->Branch("tof1",&tTof1,"tTof1/D");
@@ -274,12 +276,21 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 	cout << "Start event loop" << endl;
 	cout << "start\t" << start << endl;
 	cout << "nEvents\t" << nEvents << endl;
+
+	// event-by-event fitting and spread of reconstructed angle
+	TH1D *eRecoP = new TH1D("eRecoP","eRecoP",80,0.6,1);
+	TH1D *eRecoPi = new TH1D("eRecoPi","eRecoPi",80,0.6,1);
+	TH1D *aSpreadP = new TH1D("aSpreadP","angSpreadP",200,0.6,1);
+	TH1D *aSpreadPi = new TH1D("aSpreadPi","angSpreadPi",200,0.6,1);
+
 	bool simulation(false);
 	for (Int_t ievent=start; ievent<end; ievent++)
 	{
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
 		simulation = fEvent->GetType();
+		eRecoP->Reset();
+		eRecoPi->Reset();// reset hist for each event
 
 		if(ievent%1000==0) 
 			std::cout<<"Event # "<< ievent << " has "<< nHits <<" hits"<<std::endl;
@@ -287,7 +298,8 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		if(ievent==0)
 		{
 			tree.SetTitle(fEvent->PrintInfo());
-			prtangle = fEvent->GetAngle();
+			assume = fEvent->GetAngle();
+			prtangle = fEvent->GetAngle() + shift;
 			studyId = fEvent->GetGeometry();
 			lensID = fEvent->GetLens();
 			beam = fEvent->GetMomentum().z();
@@ -361,7 +373,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 				if(ring<rt2) rt2 = ring;
 
 			//if(ievent==17)
-				//std::cout << Form("channel %d, r1 %d, r2 %d",chan, rt1, rt2) << std::endl;
+			//std::cout << Form("channel %d, r1 %d, r2 %d",chan, rt1, rt2) << std::endl;
 
 			//if(chan == tof1_chan) tTof1 = hitTime;
 			//if(chan == tof2_chan) tTof2 = hitTime;
@@ -545,6 +557,11 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 						tTime  = hitTime;
 						tExpt  = bartime + evtime;
 						tDiff  = tTime - tExpt;
+
+						if(tPID>1000 )//&& abs(tDiff)<1)
+							eRecoP->Fill(tangle);
+						if(tPID<1000 )//&& abs(tDiff)<1)
+							eRecoPi->Fill(tangle);
 							
 						lTree->Fill();
 
@@ -566,14 +583,32 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			
 			nsYield++;
 			if(isGoodHit) nsHits++; 	
+		} // end hit loop
+
+		// fit eventReco and save mean to angSpread
+		int xlow = eRecoP->FindBin(0.8);
+		int xhi = eRecoP->FindBin(0.84);
+		int areaP = eRecoP->Integral(xlow,xhi);
+		int areaPi = eRecoPi->Integral(xlow,xhi);
+		if(areaP && tPID>1000)
+		{
+			eRecoP->Fit("gaus","Q","",0.78,0.86);
+			aSpreadP->Fill(eRecoP->GetFunction("gaus")->GetParameter(1));
 		}
+		if(areaPi && tPID<1000)
+		{
+			eRecoPi->Fit("gaus","Q","",0.78,0.86);
+			aSpreadPi->Fill(eRecoPi->GetFunction("gaus")->GetParameter(1));
+		}
+		
+		
 
 		for(Int_t j=0; j<15; j++){
 			for(Int_t i=0; i<65; i++){
 				mcpdata[j][i]=0;
 				cluster[j][i]=0;
 			}	
-	}    
+		}    
 
 		Double_t sum = sum1-sum2;
 		if(sum!=0){
@@ -590,7 +625,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 				yield = nsYield/(Double_t)ninfit;
 				spr = spr*1000;
 				trr = spr/sqrt(nph);
-				theta = fEvent->GetAngle();
+				theta = prtangle;
 				par3 = fEvent->GetTest1();
 				std::cout<<"p  "<<sum1 << "   pi "<<sum2 << "  s "<< sum<<std::endl;
 				std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
@@ -598,7 +633,16 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 			}
 			else break;
 		}
-	}
+	} // end event loop
+	
+	// draw spread histograms for testing
+	/*TCanvas *c1 = new TCanvas(); c1->cd();
+	aSpreadP->Draw();
+	aSpreadPi->SetLineColor(kRed);
+	aSpreadPi->Draw("same");
+	c1->Update();
+	c1->WaitPrimitive();
+	delete c1;*/
   
 	if(!loopoverall)
 	{
@@ -607,7 +651,7 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		yield = nsYield/(Double_t)nsEvents;
 		spr = spr*1000;
 		trr = spr/sqrt(nph);
-		theta = fEvent->GetAngle();
+		theta = prtangle;
 		par3 = fEvent->GetTest1();
 		std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
 		tree.Fill();
@@ -648,12 +692,14 @@ void PrtLutReco::Run(Int_t start, Int_t end){
 		if(fVerbose) gROOT->SetBatch(0);
 		tree.Fill();
 	}
-	fHist0->Write();
+	/*fHist0->Write();
 	fHist1->Write();
 	fHist2->Write();
 	fHist3->Write();
 	fHist4->Write();
-	fHist5->Write();
+	fHist5->Write();*/
+	aSpreadP->Write();
+	aSpreadPi->Write();
 	hLnDiffP->SetName("Psep");
 	hLnDiffP->Write();
 	hLnDiffPi->SetName("Pisep");

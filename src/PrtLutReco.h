@@ -29,7 +29,7 @@ public:
 
 	// Destructor
 	~PrtLutReco();
-	void Run(Int_t start=0, Int_t end=0);
+	void Run(Int_t start=0, Int_t end=0, Double_t shift=0.0);
 
 private:
 	Bool_t FindPeak(Double_t& cherenkovreco, Double_t& spr,Double_t a);
