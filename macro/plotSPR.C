@@ -6,10 +6,10 @@
 
 // whether or not to print histograms to files
 bool print = true;
-TString path = "../studies/bgsub/";
-TString cutpath = path+"pol3_3/";
+TString path = "../studies/bgsub158/";
+TString cutpath = path;//+"pol3_3/";
 
-TFile *save = new TFile(cutpath+"C/plots.root","RECREATE");
+//TFile *save = new TFile(cutpath+"C/plots.root","RECREATE");
 
 void fillGraphs(TString dirname, TString type, 
 				TGraph *&grSPR, TGraph *&grNPH, TGraph *&grANG)
@@ -45,6 +45,7 @@ void fillGraphs(TString dirname, TString type,
 		//if(45>track || track>55) continue; // testing odd section
 
 		if(type=="sim") beam /= 1000; // shift sim to GeV
+		if(type=="sim" && fmod(atof(Form("%.0f",track)),10)>0) continue;
 		double pmass   = 0.9382723;
 		double trangle = acos(sqrt(beam*beam + pmass*pmass)/beam/1.4738); // true cherenkov angle
 		
@@ -82,8 +83,8 @@ void fillGraphs(TString dirname, TString type,
 		// fit spectrum, get sigma, and fill graph
 		char *fitOpt = "NQ";
 		if(print) fitOpt = "Q";
-		TF1 *gaus0 = new TF1("gaus0","gaus+pol3(3)");
-		gaus0->SetParameters(con,mean,0.01,con/3,10,10,10);
+		TF1 *gaus0 = new TF1("gaus0","gaus+pol1(3)");
+		gaus0->SetParameters(con,mean,0.01,con/3,10,10);
 		gaus0->SetParName(1,"#theta_{C}");
 		gaus0->SetParName(2,"#sigma");
 		theta->Fit("gaus0",fitOpt,"",mean-0.03,mean+0.03);
@@ -171,7 +172,7 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	if(print) gROOT->SetBatch(1);
 
 	// define paths to data and simulation files
-	TString simdir = Form("../simulation/%d/reco/%s",studyID,luttype.Data());
+	TString simdir = Form("../simulation/151/reco/%s",luttype.Data());
 	TString datdir =  Form("../data/%d/reco/%s",studyID,luttype.Data());
 	// define SPR graphs and fill them
 	TGraph *grSPRsim = new TGraph();
@@ -249,12 +250,12 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	if(print) c3->Print(cutpath+"C/angle_vs_thetaCdiff.C");
 	
 	// save graphs to .root file
-	save->cd();
+	/*save->cd();
 	grSPRsim->Write("grSUBsim");
 	grSPRdat->Write("grSUBdat");
 	grANGsim->Write("grANGsim");
 	grANGdat->Write("grANGdat");
-	save->Write();
+	save->Write();*/
 
 } // end plotSPR.C
 

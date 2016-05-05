@@ -284,6 +284,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	TH1D *aSpreadPi = new TH1D("aSpreadPi","angSpreadPi",200,0.6,1);
 
 	bool simulation(false);
+	gROOT->SetBatch(1);
 	for (Int_t ievent=start; ievent<end; ievent++)
 	{
 		fChain->GetEntry(ievent);

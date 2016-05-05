@@ -1,9 +1,9 @@
-TString path = "../studies/bgsub/";
-TString cutpath = path+"pol3_3/";
-TString function = "gaus+pol3(3)";
+TString path = "../studies/bgsub158/";
+TString cutpath = path;//+"pol3_3/";
+TString function = "gaus+pol1(3)";
 bool smooth = false;
 
-TFile *save = new TFile(cutpath+"C/plots_bgsub.root","RECREATE");
+//TFile *save = new TFile(cutpath+"C/plots_bgsub.root","RECREATE");
 
 void SpecSearch(TSpectrum *&spec, TH1D *&hist, TF1 *&fit,
 				double &mean, double &con, TString type)
@@ -25,8 +25,8 @@ void SpecSearch(TSpectrum *&spec, TH1D *&hist, TF1 *&fit,
 	}
 
 	// fit hist
-	if(type=="sim") fit->SetParameters(con,mean,0.01,0,0,0,0);
-	else fit->SetParameters(con,mean,0.01,con/3,10,0,0);
+	if(type=="sim") fit->SetParameters(con,mean,0.01,0,0);
+	else fit->SetParameters(con,mean,0.01,con/3,10,0);
 	fit->SetParName(1,"#theta_{C}");
 	fit->SetParName(2,"#sigma");
 	hist->Fit(fit->GetName(),"Q","",mean-0.03,mean+0.03);
@@ -40,7 +40,7 @@ void dataBGsub( Int_t studyID=151 )
 	gStyle->SetLegendBorderSize(0);
 
 	// define paths to data and simulation files
-	TString simdir = Form("../simulation/%d/reco/cs/",studyID);
+	TString simdir = Form("../simulation/151/reco/cs/");
 	TString datdir =  Form("../data/%d/reco/cs/",studyID);
 
 	// grab files from dirname
@@ -266,10 +266,10 @@ void dataBGsub( Int_t studyID=151 )
 	}
 
 	// save graphs to .root file
-	save->cd();
+	/*save->cd();
 	grSUBsim->Write("grSUBsim");
 	grSUBdat->Write("grSUBdat");
 	grANGsim->Write("grANGsim");
 	grANGdat->Write("grANGdat");
-	save->Write();
+	save->Write();*/
 }

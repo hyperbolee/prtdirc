@@ -75,12 +75,13 @@ while true; do
 		  exit 0;;
 
 	  -l | --lens) # set lens number
-		  lensid=$2;
+		  study=$2;
 		  case "$2" in # set lens name
-			  0 ) lensnm=NON; study=0   ;;
-			  1 ) lensnm=2CS; study=150 ;;
-			  3 ) lensnm=3CS; study=151 ;;
-			  4 ) lensnm=AGL; study=154 ;;
+			  0   ) lensnm=NON; lensid=0 ;;
+			  150 ) lensnm=2CS; lensid=2 ;;
+			  151 ) lensnm=3CS; lensid=3 ;;
+			  158 ) lensnm=3CS; lensid=3 ;;
+			  154 ) lensnm=AGL; lensid=4 ;;
 			  * ) echo "Wrong lens option";
 				  showHelp;
 				  exit 0;;

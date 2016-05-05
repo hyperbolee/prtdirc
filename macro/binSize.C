@@ -2,15 +2,25 @@
 
 void binSize()
 {
-	gROOT->SetBatch(1);
-	gStyle->SetOptFit(1);
-	gStyle->SetLegendBorderSize(0);
+	SetStyle();
 
 	int studyID = 151;
 	int bins[] = {80, 120, 160, 200, 400};
 	TString datdir =  Form("../data/%d/reco/cs/",studyID);
 	TString simdir = Form("../simulation/%d/reco/cs/",studyID);
 	TString savedir = "../studies/binning";
+
+	TGraph *grsim[4];
+	TGraph *grdat[4];
+	TGraph *grsimbg[4];
+	TGraph *grdatbg[4];
+	for(int i=0; i<4; i++)
+	{
+		grsim[i] = new TGraph();
+		grdat[i] = new TGraph();
+		grsimbg[i] = new TGraph();
+		grdatbg[i] = new TGraph();
+	}
 
 	// grab files from dirname
 	TSystemDirectory dir(datdir,datdir);
@@ -20,6 +30,7 @@ void binSize()
 	TString fname;
 	TIter next(files);
 
+	int n = 0;
 	while( file=(TSystemFile*)next() )
 	{
 		fname = file->GetName();
@@ -46,6 +57,10 @@ void binSize()
 			continue;
 		}
 		cout << "Processing " << fname << endl;
+		grsim[n]->SetTitle(Form("%.2f",track));
+		grdat[n]->SetTitle(Form("%.2f",track));
+		grsimbg[n]->SetTitle(Form("%.2f",track));
+		grdatbg[n]->SetTitle(Form("%.2f",track));
 		TString simfile = simdir+Form("reco_3CS_%.2f_cs_avr_spr.root",track);
 		TFile *sfile = new TFile(simfile);
 		TTree *sreco = (TTree*)sfile->Get("reco");
@@ -102,6 +117,11 @@ void binSize()
 			cdat->Draw();
 			c1->Print(Form(name.Data(),"data_bgsub",track,bin));
 
+			grsim[n]->SetPoint(b,bin,1000*fitsim->GetParameter(2));
+			grdat[n]->SetPoint(b,bin,1000*fitdat->GetParameter(2));
+			grsimbg[n]->SetPoint(b,bin,1000*fitcsim->GetParameter(2));
+			grdatbg[n]->SetPoint(b,bin,1000*fitcdat->GetParameter(2));
+
 			delete c1;
 			delete fitsim;
 			delete fitdat;
@@ -121,6 +141,79 @@ void binSize()
 		delete tdirc;
 		delete tfile;
 		
+		n++;
 	} // end while(file)
+
+	TCanvas *casim = new TCanvas();
+	TCanvas *cadat = new TCanvas();
+	TCanvas *casimbg = new TCanvas();
+	TCanvas *cadatbg = new TCanvas();
+	TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
+
+	int i = 0;
+	double min(5), max(15);
+	Color_t color[] = {kRed, kBlue, kGreen, kCyan};
+
+	casim->cd();
+	StyleGraph(grsim[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+	TString grtitle = grsim[i]->GetTitle();
+	grsim[i]->SetTitle("Simulation");
+	grsim[i]->Draw("APL");
+
+	cadat->cd();
+	StyleGraph(grdat[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+	grdat[i]->SetTitle("Test Beam");
+	grdat[i]->Draw("APL");
+
+	casimbg->cd();
+	StyleGraph(grsimbg[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+	grsimbg[i]->SetTitle("Simulation BGSub");
+	grsimbg[i]->Draw("APL");
+
+	cadatbg->cd();
+	StyleGraph(grdatbg[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+	grdatbg[i]->SetTitle("Test Beam BGSub");
+	grdatbg[i]->Draw("APL");
+
+	leg->AddEntry(grsim[i],Form("%s #circ",grtitle.Data()),"lp");
+	
+	for(i=1; i<4; i++)
+	{
+		casim->cd();
+		StyleGraph(grsim[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+		grsim[i]->Draw("PL");
+
+		cadat->cd();
+		StyleGraph(grdat[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+		grdat[i]->Draw("PL");
+
+		casimbg->cd();
+		StyleGraph(grsimbg[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+		grsimbg[i]->Draw("PL");
+
+		cadatbg->cd();
+		StyleGraph(grdatbg[i],min,max,"SPR [mrad]",
+			   "# of bins", 20+i,color[i]);
+		grdatbg[i]->Draw("PL");
+
+		leg->AddEntry(grsim[i],Form("%s #circ",grsim[i]->GetTitle()),"lp");
+	}
+	
+	casim->cd(); leg->Draw();
+	cadat->cd(); leg->Draw();
+	casimbg->cd(); leg->Draw();
+	cadatbg->cd(); leg->Draw();
+	
+	casim->Print(Form("%s/bin_vs_SPR_sim.png",savedir.Data()));
+	cadat->Print(Form("%s/bin_vs_SPR_data.png",savedir.Data()));
+	casimbg->Print(Form("%s/bin_vs_SPR_simbg.png",savedir.Data()));
+	cadatbg->Print(Form("%s/bin_vs_SPR_databg.png",savedir.Data()));
 
 }
