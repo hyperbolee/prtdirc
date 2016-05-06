@@ -119,7 +119,7 @@ int main(int argc,char** argv)
 
 	if(runtype == 2){
 		PrtLutReco * reco = new PrtLutReco(infile,lutfile,verbose); 
-		reco->Run(firstevent, atoi(events), shift);
+		reco->Run(firstevent, firstevent+atoi(events), shift);
 		return 0;
 	}
 
