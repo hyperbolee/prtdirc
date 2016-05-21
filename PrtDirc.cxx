@@ -118,7 +118,9 @@ int main(int argc,char** argv)
 	//if(beamDimension.size())PrtManager::Instance()->SetTest1(atoi(beamDimension));
 
 	if(runtype == 2){
-		PrtLutReco * reco = new PrtLutReco(infile,lutfile,verbose); 
+		PrtLutReco * reco = new PrtLutReco(infile,lutfile,verbose);
+		std::cout << "firstevet\t" << firstevent << std::endl;
+		std::cout << "lastevent\t" << firstevent+atoi(events) << std::endl;
 		reco->Run(firstevent, firstevent+atoi(events), shift);
 		return 0;
 	}
