@@ -26,7 +26,7 @@ void fillGraphs(TString dirname, TString type,
 	while( file=(TSystemFile*)next() )
 	{
 		fname = file->GetName();
-		if( file->IsDirectory() || !fname.EndsWith(".root") )
+		if( file->IsDirectory() || !fname.EndsWith(".root") || fname.Contains("pi+"))
 			continue; // don't process directories or non-root files
 		cout << "Processing " << fname << endl;
 
@@ -197,10 +197,12 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	grSPRsim->SetMarkerStyle(20);
 	grSPRsim->SetMarkerColor(kBlue);
 	grSPRsim->SetTitle("");
+	grSPRsim->SetName("grSPRsim");
 	grSPRsim->Draw("APL");
 
 	grSPRdat->SetMarkerStyle(20);
 	grSPRdat->SetMarkerColor(kRed);
+	grSPRdat->SetName("grSPRdat");
 	grSPRdat->Draw("PL");
 
 	// legend for each canvas
@@ -220,10 +222,12 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	grNPHsim->SetMarkerStyle(20);
 	grNPHsim->SetMarkerColor(kBlue);
 	grNPHsim->SetTitle("");
+	grNPHsim->SetName("grNPHsim");
 	grNPHsim->Draw("APL");
 
 	grNPHdat->SetMarkerStyle(20);
 	grNPHdat->SetMarkerColor(kRed);
+	grNPHdat->SetName("grNPHdat");
 	grNPHdat->Draw("PL");
 
 	leg->Draw();
@@ -239,15 +243,26 @@ void plotSPR(int studyID=151, TString luttype="cs/")
 	grANGsim->SetMarkerStyle(20);
 	grANGsim->SetMarkerColor(kBlue);
 	grANGsim->SetTitle("");
+	grANGsim->SetName("grANGsim");
 	grANGsim->Draw("APL");
 
 	grANGdat->SetMarkerStyle(20);
 	grANGdat->SetMarkerColor(kRed);
+	grANGdat->SetName("grANGdat");
 	grANGdat->Draw("PL");
 
 	leg->Draw();
 	if(print) c3->Print(cutpath+"angle_vs_thetaCdiff.png");
 	if(print) c3->Print(cutpath+"C/angle_vs_thetaCdiff.C");
+
+	TFile *outfile = new TFile(path+"C/bgsub158.root","recreate");
+	outfile->Add(grSPRsim);
+	outfile->Add(grNPHsim);
+	outfile->Add(grANGsim);
+	outfile->Add(grSPRdat);
+	outfile->Add(grNPHdat);
+	outfile->Add(grANGdat);
+	outfile->Write();
 	
 	// save graphs to .root file
 	/*save->cd();
