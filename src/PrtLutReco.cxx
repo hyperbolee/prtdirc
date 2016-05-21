@@ -296,7 +296,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		if(ievent%1000==0) 
 			std::cout<<"Event # "<< ievent << " has "<< nHits <<" hits"<<std::endl;
 
-		if(ievent==0)
+		if(ievent==start)
 		{
 			tree.SetTitle(fEvent->PrintInfo());
 			assume = fEvent->GetAngle();
@@ -393,7 +393,6 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		{
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
-
 			// set hit information for trees
 			tTime = hitTime;
 			tMCP  = fHit.GetMcpId();
@@ -498,7 +497,6 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			Int_t size =fLutNode[sensorId]->Entries();
 			for(int i=0; i<size; i++){
 				weight = 1; //fLutNode[sensorId]->GetWeight(i);
-				
 				if(csCorr)
 				    dird = fLutNode[sensorId]->GetEntryCs(i,nedge);
 				else 
@@ -525,16 +523,19 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 					fHist1->Fill(hitTime);
 					fHist2->Fill(bartime+evtime);
 
-					if(fabs((bartime+evtime)-hitTime)>test1) continue;
+					if(fabs((bartime+evtime)-hitTime)>test1)
+						continue;
+					
 					fHist3->Fill(fabs((bartime+evtime)),hitTime);
 					tangle = momInBar.Angle(dir);
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
+
 						if(0.7<tangle && tangle<0.9)
 						{
 							if(fabs((bartime+evtime)-hitTime)<3)
-								isGoodHit=true;
-							//if(studyId<160 && fabs(tangle-0.815)<0.07) isGoodHit=true; //test2
+							//isGoodHit=true;
+								if(fabs(tangle-0.815)<0.07) isGoodHit=true; //test2
 							//if(studyId>=160) isGoodHit=true;
 						}
 
@@ -608,8 +609,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			for(Int_t i=0; i<65; i++){
 				mcpdata[j][i]=0;
 				cluster[j][i]=0;
-			}	
-		}    
+			}
+		}
 
 		Double_t sum = sum1-sum2;
 		if(sum!=0){
@@ -898,5 +899,4 @@ Int_t PrtLutReco::FindPdg(Double_t mom, Double_t cangle){
 	}
 	return pdg[minid]; 
 }
-
 
