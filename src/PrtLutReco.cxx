@@ -205,6 +205,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 	test1 = PrtManager::Instance()->GetTest1();
 
+    Int_t baramb(0);
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0);
 	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
@@ -234,6 +235,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("track",&prtangle,"prtangle/D"); // track
 	lTree->Branch("aTrack",&assume,"assume/D"); // assumed track
+	lTree->Branch("baramb",&baramb,"baramb/I"); // bar ambiguity correct?
 	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
 	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
 	lTree->Branch("diff",&tDiff,"tDiff/D"); // difference in times
@@ -278,8 +280,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	cout << "nEvents\t" << nEvents << endl;
 
 	// event-by-event fitting and spread of reconstructed angle
-	TH1D *eRecoP = new TH1D("eRecoP","eRecoP",80,0.6,1);
-	TH1D *eRecoPi = new TH1D("eRecoPi","eRecoPi",80,0.6,1);
+	TH1D *eRecoP = new TH1D("eRecoP","eRecoP",120,0.6,1);
+	TH1D *eRecoPi = new TH1D("eRecoPi","eRecoPi",120,0.6,1);
 	TH1D *aSpreadP = new TH1D("aSpreadP","angSpreadP",200,0.6,1);
 	TH1D *aSpreadPi = new TH1D("aSpreadPi","angSpreadPi",200,0.6,1);
 
@@ -513,6 +515,17 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 					if(u == 3) dir.SetXYZ( -dird.X(),-dird.Y(), dird.Z()); //no need when no divergence in vertical plane
 					if(reflected) dir.SetXYZ( dir.X(), dir.Y(), -dir.Z());
 					if(dir.Angle(fnX1) < criticalAngle || dir.Angle(fnY1) < criticalAngle) continue;
+
+					TVector3 phmom = fHit.GetMomentum(); // photon momentum
+					if( simulation && // product will be > 0 if components have the same sign
+						( phmom.X()*dir.X() > 0 ) &&
+						( phmom.Y()*dir.Y() > 0 ) &&
+						( phmom.Z()*dir.Z() > 0 )  )
+						baramb = 1;
+					
+					else
+						baramb = 0;
+						
 
 					luttheta = dir.Theta();  
 					if(luttheta > TMath::PiOver2()) luttheta = TMath::Pi()-luttheta;
