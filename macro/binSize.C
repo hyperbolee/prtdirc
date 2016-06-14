@@ -5,16 +5,19 @@ void binSize()
 	SetStyle();
 
 	int studyID = 151;
-	int bins[] = {80, 120, 160, 200, 400};
+	int nbins = 7;
+	int bins[] = {80, 100, 120, 140, 160, 180, 200};
+	//int bins[] = {80, 120, 160, 200, 400};
 	TString datdir =  Form("../data/%d/reco/cs/",studyID);
 	TString simdir = Form("../simulation/%d/reco/cs/",studyID);
 	TString savedir = "../studies/binning";
 
-	TGraph *grsim[4];
-	TGraph *grdat[4];
-	TGraph *grsimbg[4];
-	TGraph *grdatbg[4];
-	for(int i=0; i<4; i++)
+	const int ntracks = 4;
+	TGraph *grsim[ntracks];
+	TGraph *grdat[ntracks];
+	TGraph *grsimbg[ntracks];
+	TGraph *grdatbg[ntracks];
+	for(int i=0; i<ntracks; i++)
 	{
 		grsim[i] = new TGraph();
 		grdat[i] = new TGraph();
@@ -57,6 +60,7 @@ void binSize()
 			continue;
 		}
 		cout << "Processing " << fname << endl;
+		cout << "\ttrack: " << track << endl;
 		grsim[n]->SetTitle(Form("%.2f",track));
 		grdat[n]->SetTitle(Form("%.2f",track));
 		grsimbg[n]->SetTitle(Form("%.2f",track));
@@ -69,7 +73,7 @@ void binSize()
 		TSpectrum *spec = new TSpectrum(10);
 		double dpeak = DiffPeak(treco);
 		
-		for(int b=0; b<5; b++)
+		for(int b=0; b<nbins; b++)
 		{
 			int bin = bins[b];
 			cout << "\tbins " << bin << endl;
@@ -153,44 +157,47 @@ void binSize()
 	int i = 0;
 	double min(5), max(15);
 	Color_t color[] = {kRed, kBlue, kGreen, kCyan};
+	TString grtitle = grsim[i]->GetTitle();
 
 	casim->cd();
-	StyleGraph(grsim[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
-	TString grtitle = grsim[i]->GetTitle();
+	StyleGraph(grsim[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 	grsim[i]->SetTitle("Simulation");
 	grsim[i]->Draw("APL");
 
 	cadat->cd();
-	StyleGraph(grdat[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+	StyleGraph(grdat[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 	grdat[i]->SetTitle("Test Beam");
 	grdat[i]->Draw("APL");
 
 	casimbg->cd();
-	StyleGraph(grsimbg[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+	StyleGraph(grsimbg[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 	grsimbg[i]->SetTitle("Simulation BGSub");
 	grsimbg[i]->Draw("APL");
 
 	cadatbg->cd();
-	StyleGraph(grdatbg[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+	StyleGraph(grdatbg[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 	grdatbg[i]->SetTitle("Test Beam BGSub");
 	grdatbg[i]->Draw("APL");
 
-	leg->AddEntry(grsim[i],Form("%s #circ",grtitle.Data()),"lp");
+	leg->AddEntry(grsim[i],Form("%s#circ",grtitle.Data()),"lp");
 	
-	for(i=1; i<4; i++)
+	for(i=1; i<ntracks; i++)
 	{
+		grtitle = grsim[i]->GetTitle();
+		//grtitle = Form("%.2f",tracks[i]);
+
 		casim->cd();
-		StyleGraph(grsim[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+		StyleGraph(grsim[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 		grsim[i]->Draw("PL");
 
 		cadat->cd();
-		StyleGraph(grdat[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+		StyleGraph(grdat[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 		grdat[i]->Draw("PL");
 
 		casimbg->cd();
@@ -199,11 +206,11 @@ void binSize()
 		grsimbg[i]->Draw("PL");
 
 		cadatbg->cd();
-		StyleGraph(grdatbg[i],min,max,"SPR [mrad]",
-			   "# of bins", 20+i,color[i]);
+		StyleGraph(grdatbg[i],min,max,"# of bins",
+			   "SPR [mrad]", 20+i,color[i]);
 		grdatbg[i]->Draw("PL");
 
-		leg->AddEntry(grsim[i],Form("%s #circ",grsim[i]->GetTitle()),"lp");
+		leg->AddEntry(grsim[i],Form("%s#circ",grtitle.Data()),"lp");
 	}
 	
 	casim->cd(); leg->Draw();
@@ -216,4 +223,8 @@ void binSize()
 	casimbg->Print(Form("%s/bin_vs_SPR_simbg.png",savedir.Data()));
 	cadatbg->Print(Form("%s/bin_vs_SPR_databg.png",savedir.Data()));
 
+	casim->Print(Form("%s/C/bin_vs_SPR_sim.C",savedir.Data()));
+	cadat->Print(Form("%s/C/bin_vs_SPR_data.C",savedir.Data()));
+	casimbg->Print(Form("%s/C/bin_vs_SPR_simbg.C",savedir.Data()));
+	cadatbg->Print(Form("%s/C/bin_vs_SPR_databg.C",savedir.Data()));
 }
