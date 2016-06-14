@@ -3,13 +3,17 @@
 void dataBGsub( int studyID=151,
 				int polRank = 1,
 				bool bgsub = true,
+				double range = 0.03,
+				TString subpath = "",
 				int smooth = 0 )
 {
 	// set ROOT options
 	SetStyle();
 
+	int bins(120);
 	TString path = Form("../studies/bgsub%d/",studyID);
 	TString cutpath = Form("../studies/bgsub%d/",studyID);
+	cutpath += subpath + "/";
 	TString function = Form("gaus+pol%d(3)",polRank);
 
 	// define paths to data and simulation files
@@ -82,9 +86,9 @@ void dataBGsub( int studyID=151,
 		
 		// get peak of time distribution
 		double dpeak = DiffPeak(treco, "PID>1000");
+		double speak = DiffPeak(sreco, "PID>1000");
 		
 		// create histograms
-		int bins(80);
 		double min(0.6), max(1);
 		double areaD(0), areaS(0), scale(0);
 		hData = new TH1D("hData","hData",bins,min,max);// data
@@ -92,13 +96,13 @@ void dataBGsub( int studyID=151,
 
 		// project onto histograms
 		treco->Project("hData","theta",Form("PID>1000 && abs(diff-%f)<1",dpeak));
-		sreco->Project("hSim","theta");
+		sreco->Project("hSim","theta",Form("PID>1000 && abs(diff-%f)<1",speak));
 
-		if(bgsub) BGSub(hSim, hData, sreco, bins, "PID>1000");
+		if(bgsub) BGSub(hSim, hData, sreco, bins, Form("PID>1000 && abs(diff-%f)<1",speak));
 
 		// search spectra, find mean, and fit
-		double *simpar = SpecSearch(spec, hSim, gausS);
-		double *datpar = SpecSearch(spec, hData, gausD);
+		double *simpar = SpecSearch(spec, hSim, gausS,range);
+		double *datpar = SpecSearch(spec, hData, gausD,range);
 
 		// get fitted sigma and set subtraction graph points
 		sigmaS = simpar[2];
@@ -185,11 +189,11 @@ void dataBGsub( int studyID=151,
 
 	// draw subtraction graphs
 	TCanvas *c1 = new TCanvas(); c1->cd();
-	StyleGraph(grSUBsim, 0, 30, "#theta_{track} [deg]", "SPR [mrad] w/ background sub", 20, kBlue, "grSUBsim", "");
-	grSUBsim->Draw("AP");
+	StyleGraph(grSUBsim, 0, 30, "#theta_{track} [deg]", "SPR [mrad]", 20, kBlue, "grSUBsim", "");
+	grSUBsim->Draw("APL");
 
-	StyleGraph(grSUBdat, 0, 30, "#theta_{track} [deg]", "SPR [mrad] w/ background sub", 20, kRed, "grSUBdat", "");
-	grSUBdat->Draw("P");
+	StyleGraph(grSUBdat, 0, 30, "#theta_{track} [deg]", "SPR [mrad]", 20, kRed, "grSUBdat", "");
+	grSUBdat->Draw("PL");
 	
 	// legend for each canvas
 	TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
@@ -202,10 +206,10 @@ void dataBGsub( int studyID=151,
 	// draw angle diff graphs
 	TCanvas *c2 = new TCanvas(); c2->cd();
 	StyleGraph(grANGsim, 810, 830, "#theta_{track} [deg]", "#theta_{C} [mrad]", 20, kBlue, "grANGsim", "");
-	grANGsim->Draw("AP");
+	grANGsim->Draw("APL");
 
 	StyleGraph(grANGdat, 810, 830, "#theta_{track} [deg]", "#theta_{C} [mrad]", 20, kRed, "grANGdat", "");
-	grANGdat->Draw("P");
+	grANGdat->Draw("PL");
 	
 	leg->Draw();
 	c2->Print(cutpath+"angle_vs_thetaC"+grsave+".png");
@@ -213,16 +217,16 @@ void dataBGsub( int studyID=151,
 
 	TCanvas *c3 = new TCanvas(); c3->cd();
 	StyleGraph(grNPHsim, 0, 120, "#theta_{track} [deg]", "photon yield per track", 20, kBlue, "grNPHsim", "");
-	grNPHsim->Draw("AP");
+	grNPHsim->Draw("APL");
 
 	StyleGraph(grNPHdat, 0, 120, "#theta_{track} [deg]", "photon yield per track", 20, kRed, "grNPHdat", "");
-	grNPHdat->Draw("P");
+	grNPHdat->Draw("PL");
 
 	leg->Draw();
 	c3->Print(cutpath+"angle_vs_NPH.png");
 	c3->Print(cutpath+"C/angle_vs_NPH.C");
 		
-    // recreate ROOT outfile and write graphs
+    // create ROOT outfile and write graphs
 	TString outsave = cutpath + "C/plots";
 	if(bgsub) outsave += "_bgsub";
 	if(smooth) outsave += "_smooth";
