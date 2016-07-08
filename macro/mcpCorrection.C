@@ -97,5 +97,5 @@ void mcpCorrection(TString infile = "", int simulation = 0)
 
 	SpecSearch(spec,thetaCorr,thfit);
 	thetaCorr->Draw();
-	c1->Print(Form("mcpcorr/%s_theta_corrected_%.2f.png",evtype.Data(),track));
+	c1->Print(Form("mcpcorr/%s_theta_%.2f_corrected.png",evtype.Data(),track));
 }

@@ -207,8 +207,10 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
     Int_t baramb(0);
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
-	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0);
-	Double_t tTheta(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
+	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0), fAngle(0);
+	Double_t tTheta(0), tPhi(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
+
+	Int_t ievent;
 
     // counter channels
 	int tof1_chan =  960;
@@ -218,6 +220,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	// tree for ambiguity information (theta_C, etc)
 	TTree *lTree = new TTree("reco","reconstruction");
 	lTree->SetAutoSave(0);
+	lTree->Branch("event",&ievent,"ievent/I"); // event number
 	lTree->Branch("mcp",&tMCP,"tMCP/I"); // mcp hit
 	lTree->Branch("pix",&tPix,"tPix/I"); // pixel hit
 	lTree->Branch("x",&tX,"tX/D"); // x position on detector
@@ -232,6 +235,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	lTree->Branch("LUTpath",&tPathLUT,"tPathLUT/D"); // path ID
 	lTree->Branch("hits",&tHits,"tHits/I");
 	lTree->Branch("theta",&tTheta,"tTheta/D"); // theta_C
+	lTree->Branch("phi",&tPhi,"tPhi/D"); // azimuth angle
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("track",&prtangle,"prtangle/D"); // track
 	lTree->Branch("aTrack",&assume,"assume/D"); // assumed track
@@ -287,7 +291,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 	bool simulation(false);
 	gROOT->SetBatch(1);
-	for (Int_t ievent=start; ievent<end; ievent++)
+	for (ievent=start; ievent<end; ievent++)
 	{
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
@@ -333,8 +337,9 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		Double_t mass[] = {0.000511,0.1056584,0.139570,0.49368,0.9382723};    
 		Double_t angle1(0), angle2(0),sum1(0),sum2(0), sigma(0.009),range(5*sigma),noise(0.3);
     
-		fAngleP = acos(sqrt(momentum*momentum+ mass[4]*mass[4])/momentum/1.4738)-0.002; //1.4738 = 370 = 3.35
-		fAnglePi= acos(sqrt(momentum*momentum + mass[2]*mass[2])/momentum/1.4738)-0.002;
+		fAngleP  = acos(sqrt(momentum*momentum+ mass[4]*mass[4])/momentum/1.4738)-0.002; //1.4738 = 370 = 3.35
+		fAnglePi = acos(sqrt(momentum*momentum + mass[2]*mass[2])/momentum/1.4738)-0.002;
+		fAngle   = (tofPid > 1000) ? fAngleP : fAnglePi; 
 
 		gF1->SetParameter(0,1);
 		gF2->SetParameter(0,1);
@@ -544,11 +549,12 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
 
-						if(0.7<tangle && tangle<0.9)
+						//if(0.7<tangle && tangle<0.9)
+						if( fabs(tangle-fAngle)<0.025 ) // thC is within 25 mrad of expected angle?
 						{
 							if(fabs((bartime+evtime)-hitTime)<3)
-							//isGoodHit=true;
-								if(fabs(tangle-0.815)<0.07) isGoodHit=true; //test2
+								isGoodHit=true;
+								//if(fabs(tangle-0.815)<0.07) isGoodHit=true; // test2
 							//if(studyId>=160) isGoodHit=true;
 						}
 
@@ -569,6 +575,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 						tPath = fHit.GetPathInPrizm();
 						tPathLUT = pathid;
 						tTheta = tangle;
+						tPhi   = dir.Phi();
 						tTime  = hitTime;
 						tExpt  = bartime + evtime;
 						tDiff  = tTime - tExpt;

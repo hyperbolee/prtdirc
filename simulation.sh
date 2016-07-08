@@ -148,6 +148,8 @@ do
 
 	waitForMe ${cores} # hold your horses!
 done
+waitForMe 1 # make sure all processes are finished
+
 printf "\n"
 
 if [ ${reco} = true ]
@@ -183,10 +185,10 @@ then
 		waitForMe ${cores} # hold your horses!
 
 	done
-	wait
+	waitForMe 1 # make sure all processes are done
 	printf "\n"
 
-<<EOF
+<<EOF # make one big file from all reconstructed files
 	# make single root file after reconstruction
 	if [ ${hadd} = true ]
 	then

@@ -161,7 +161,7 @@ double* SpecSearch(TSpectrum *&spec, TH1D *&hist, TF1 *&fit, double range = 0.03
     // uses a TSpectrum to find a peak in hist
 	// and set mean and multiplicative constant
 	double con(0), mean(0), sigma(0);
-	int nfound = spec->Search(hist,2,"nodraw",0.6);
+	int nfound = spec->Search(hist,2,"nobackground nodraw",0.6);
 	if(nfound)
 	{ // if peak found use spectrum peak
 		mean = spec->GetPositionX()[0];
@@ -172,7 +172,7 @@ double* SpecSearch(TSpectrum *&spec, TH1D *&hist, TF1 *&fit, double range = 0.03
 		mean = hist->GetBinCenter(hist->GetMaximumBin());
 		if(mean>0.86) mean = 0.82; // stay within range 
 		con  = hist->GetMaximum();
-		cout << "didn't find peak" << endl;
+		//cout << "didn't find peak" << endl;
 	}
 
 	// fit hist
@@ -220,14 +220,14 @@ TH1D* ThetaCorr( TTree *&tree,
 	mcpfit->SetParameters(100,angle,0.007);
 
 	double diffpeak = DiffPeak(tree,pidcut);
-	TString cut = pidcut + Form(" && abs(diff-%f)<1",diffpeak);
+	pidcut += Form(" && abs(diff-%f)<1",diffpeak);
 
 	// loop over mcps
 	for(int mcpid = 0; mcpid < nMCP; mcpid++)
 	{
         // get timing peak for MCP=mcpid
-		//TString cut = pidcut + Form(" && mcp==%d",mcpid);
-		cut += Form(" && mcp==%d",mcpid);
+		TString cut = pidcut + Form(" && mcp==%d",mcpid);
+		//cut += Form(" && mcp==%d",mcpid);
 		//double diffpeak = DiffPeak(tree,cut);
 		//cout << "MCP " << mcpid << " time shift\t" << diffpeak << endl;
 
