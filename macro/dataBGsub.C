@@ -14,6 +14,7 @@ void dataBGsub( int studyID=151,
 // rounds to nearest 2 decimal points
 // x = floor(num*100+0.5)/100;
 
+	// polar angle and associated error arrays
 	int Ntracks = 27;
 	double trackArray[] = {20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150};
 
@@ -29,7 +30,8 @@ void dataBGsub( int studyID=151,
 
 	double datThCRms[] = {1.31638, 0.678542, 0.834017, 0.637891, 0.725545, 0.731959, 1.0123, 0.834032, 0.941784, 1.08122, 1.07038, 1.38872, 1.41628, 8.16396, 0.976971, 1.70776, 0.881894, 0.928424, 0.728263, 0.702393, 0.598629, 0.476104, 0.557351, 0.44133, 0.590336, 0.43922, 0.530601};
 
-
+	// maps for holding track and error
+	// ....it's easier, I swear....
 	map<double,double> simNphMap;
 	map<double,double> simSprMap;
 	map<double,double> simThCMap;
@@ -38,6 +40,7 @@ void dataBGsub( int studyID=151,
 	map<double,double> datThCMap;
 	//cout << "track[0] " << trackArray[0] << endl;
 
+	// fill maps
 	for(int i=0; i<Ntracks; i++)
 	{
 		// fill sim maps
@@ -54,6 +57,7 @@ void dataBGsub( int studyID=151,
 	//return;
 
 
+	// save path and fit function
 	int bins(120);
 	TString path = Form("../studies/bgsub%d/",studyID);
 	TString cutpath = Form("../studies/bgsub%d/",studyID);

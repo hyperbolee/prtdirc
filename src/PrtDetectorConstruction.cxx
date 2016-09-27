@@ -217,6 +217,8 @@ G4VPhysicalVolume* PrtDetectorConstruction::Construct(){
   
 		G4double r1 = 0; //PrtManager::Instance()->GetTest1();
 		G4double r2 = 0; //PrtManager::Instance()->GetTest2();
+
+		//fLens[2] = 30;
   
 		r1 = (r1==0)? 47.8: r1;
 		r2 = (r2==0)? 29.1: r2;
@@ -511,6 +513,11 @@ G4VPhysicalVolume* PrtDetectorConstruction::Construct(){
 		0.9245,0.9285,0.932,0.934,0.935,0.936,0.9385,0.9395,0.94,
 		0.9405,0.9405,0.9405,0.9405,0.94,0.9385,0.936,0.934,
 		0.931,0.9295,0.928,0.928,0.921,0.92,0.927,0.9215};
+
+	// modify mirror reflectivity for photon yield testing
+	// reduce reflectivity by 20%
+	for(int i=0; i<num; i++)
+		ReflectivityMirrorBar[i] -= 0.2;
 
 	G4MaterialPropertiesTable *MirrorMPT = new G4MaterialPropertiesTable();
 	MirrorMPT->AddProperty("REFLECTIVITY", PhotonEnergy, ReflectivityMirrorBar, num);

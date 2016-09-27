@@ -5,14 +5,15 @@ void binSize()
 	SetStyle();
 
 	int studyID = 151;
-	int nbins = 7;
-	int bins[] = {80, 100, 120, 140, 160, 180, 200};
+	int nbins = 5;
+	//int bins[] = {60};
+	int bins[] = {80, 100, 120, 140, 160};
 	//int bins[] = {80, 120, 160, 200, 400};
 	TString datdir =  Form("../data/%d/reco/cs/",studyID);
 	TString simdir = Form("../simulation/%d/reco/cs/",studyID);
 	TString savedir = "../studies/binning";
 
-	const int ntracks = 4;
+	const int ntracks = 1;
 	TGraph *grsim[ntracks];
 	TGraph *grdat[ntracks];
 	TGraph *grsimbg[ntracks];
@@ -48,10 +49,11 @@ void binSize()
 		tdirc->GetEntry(0);
 		
 		// only want specific files for now
-		if(track != 20 &&
+		/*if(track != 20 &&
 		   track != 65 &&
 		   track != 90 &&
-		   track != 125)
+		   track != 125)*/
+		if(track != 60)
 		{
 			delete treco;
 			delete tdirc;

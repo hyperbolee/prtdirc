@@ -183,13 +183,45 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	SetRootPalette(1);
 	CreateMap();
 	initDigi();
-  
+
+	// veto counter photon yield study
+	double vL(0), vR(0), vTR(0), vTL(0), vBR(0); // individual
+	double vT1(0), vT2(0), vTA(0); // consolidated
+	
+	// trigger counter coincidence Nph
+	double trigNph(0);
+	double novt1(0), novt12(0); // trigger with no veto
+
+	// total events for each trig/veto case
+	int trig1(0), trig2(0), trig12(0); // for trigger photon yield
+	int vtrg1(0), vtrg2(0), vtrg12(0); // for veto counter
+	int enov1(0), enov12(0);
+	
 	TFile file(outFile,"recreate");
 	TTree tree("dirc","SPR");
 	tree.Branch("spr", &spr,"spr/D");
 	tree.Branch("trr", &trr,"trr/D");
-	tree.Branch("nph",&nph,"nph/D");
-	tree.Branch("yield",&yield,"yield/D");
+	tree.Branch("nph",&nph,"nph/D"); //nph trig1
+	//tree.Branch("yield",&yield,"yield/D");
+	//tree.Branch("vetoL",&vL,"vL/D");
+	//tree.Branch("vetoR",&vR,"vR/D");
+	//tree.Branch("vetoTR",&vTR,"vTR/D");
+	//tree.Branch("vetoTL",&vTL,"vTL/D");
+	//tree.Branch("vetoBR",&vBR,"vBR/D");
+	tree.Branch("trigNph",&trigNph,"trigNph/D"); //nph trig1+2
+	tree.Branch("vetoT1",&vT1,"vT1/D"); //nph veto1+trig1
+	tree.Branch("vetoT2",&vT2,"vT2/D");//nph veto2+trig2
+	tree.Branch("vetoTA",&vTA,"vTA/D");//nph veto1+veto2+trig1+trig2
+	tree.Branch("novt1",&novt1,"novt1/D");
+	tree.Branch("novt12",&novt12,"novt12/D");
+	tree.Branch("etrig1",&trig1,"trig1/I");
+	//tree.Branch("etrig2",&trig2,"trig2/I");
+	tree.Branch("etrig12",&trig12,"trig12/I");
+	tree.Branch("eveto1",&vtrg1,"vtrg1/I");
+	//tree.Branch("eveto2",&vtrg2,"vtrg2/I");
+	tree.Branch("eveto12",&vtrg12,"vtrg12/I");
+	//tree.Branch("enov1",&enov1,"enov1/D");
+	//tree.Branch("enov12",&enov12,"enov12/D");
 	tree.Branch("cangle",&cangle,"cangle/D");
 	tree.Branch("separation",&separation,"separation/D");
 	tree.Branch("par3",&par3,"par3/D");
@@ -216,6 +248,9 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	int tof1_chan =  960;
 	int tof2_chan = 1104;
 	int trig_chan = 1344;
+
+	bool t1(false), t2(false), t12(false); // triggers hit?
+	bool veto1(false), veto12(false); // vetos hit?
 
 	// tree for ambiguity information (theta_C, etc)
 	TTree *lTree = new TTree("reco","reconstruction");
@@ -246,6 +281,11 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	lTree->Branch("tof1",&tTof1,"tTof1/D"); // timing of TOF1
 	lTree->Branch("tof2",&tTof2,"tTof2/D"); // timing of TOF2
 	lTree->Branch("trig",&tTrig,"tTrig/D"); // timing of TRIG
+	lTree->Branch("t1",&t1,"t1/O");
+	lTree->Branch("t12",&t12,"t12/O");
+	lTree->Branch("veto1",&veto1,"veto1/O");
+	lTree->Branch("veto12",&veto12,"veto12/O");
+	
 	
 	// tree for hit-by-hit information (timing, etc)
 	TTree *hTree = new TTree("hits","hit by hit variables");
@@ -295,7 +335,6 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	{
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
-		simulation = fEvent->GetType();
 		eRecoP->Reset();
 		eRecoPi->Reset();// reset hist for each event
 
@@ -310,6 +349,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			studyId = fEvent->GetGeometry();
 			lensID = fEvent->GetLens();
 			beam = fEvent->GetMomentum().z();
+			simulation = fEvent->GetType();
 
 			if(!simulation)
 			{ // beam center correction for data
@@ -366,7 +406,13 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		tHits = nHits;
 		tTof1 = tTof2 = tTrig = 0;
 		int rt1(5), rt2(5); // assume outter ring
-		// use this loop for tighter cuts 
+		t1  = false;
+		t2  = false;
+		t12 = false;
+		veto1  = false;
+		veto12 = false;
+		bool vetoL(0), vetoR(0), vetoTR(0), vetoTL(0), vetoBR(0);
+		// loop over hits once to set useful values
 		for(Int_t ihit=0; ihit<nHits; ihit++)
 		{
 			fHit = fEvent->GetHit(ihit);
@@ -380,6 +426,14 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			if(1088<=chan && chan<=1151)
 				if(ring<rt2) rt2 = ring;
 
+			if(chan==1344) t1     = true; // trig 1
+			if(chan==1346) t2     = true; // trig 2
+			if(chan==1347) vetoL  = true;
+			if(chan==1348) vetoR  = true;
+			if(chan==1349) vetoTR = true;
+			if(chan==1350) vetoTL = true;
+			if(chan==1351) vetoBR = true;
+
 			//if(ievent==17)
 			//std::cout << Form("channel %d, r1 %d, r2 %d",chan, rt1, rt2) << std::endl;
 
@@ -390,16 +444,34 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		}
 		tTof1 = rt1;
 		tTof2 = rt2;
+
+		if(t1) trig1++;
+		if(t2) trig2++;
+		if(t1 && t2) t12 = true;
+		if(t1 && t2) trig12++;
+
+		if(vetoL || vetoR) veto1 = true;
+		if((vetoL || vetoR) && (vetoTR || vetoTL || vetoBR))
+			veto12 = true;
+
+		if( veto1 && t1) vtrg1++;
+		if(!veto1 && t1) enov1++;
+		if((vetoTR || vetoTL || vetoBR) && t2) vtrg2++;
+		if( veto12 && t1 && t2) vtrg12++;
+		if(!veto12 && t1 && t2) enov12++;
+
 		//if(rt2==5 || rt1==5)
 		//std::cout <<Form("%d: (%d,%d)",ievent,rt1,rt2)<< std::endl;
-		
+
 		tPID  = fEvent->GetParticle();
 		if(tPID>1000) tProt++;
 		else tPi++;
 		for(Int_t h=0; h<nHits; h++)
 		{
+			// get hit object
 			fHit = fEvent->GetHit(h);
 			hitTime = fHit.GetLeadTime();
+			
 			// set hit information for trees
 			tTime = hitTime;
 			tMCP  = fHit.GetMcpId();
@@ -410,7 +482,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			tMCP  = fHit.GetMcpId();
 			tPix  = fHit.GetPixelId() - 1;
 
-			if(simulation)
+			if(simulation) // get wavelength from sim
 				tLambda = fHit.GetTotTime();
 
 			{ //time cuts
@@ -550,7 +622,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 						fHist->Fill(tangle ,weight);
 
 						//if(0.7<tangle && tangle<0.9)
-						if( fabs(tangle-fAngle)<0.025 ) // thC is within 25 mrad of expected angle?
+						if( fabs(tangle-fAngle)<0.035 ) // thC is within +-35 mrad of expected angle?
 						{
 							if(fabs((bartime+evtime)-hitTime)<3)
 								isGoodHit=true;
@@ -604,7 +676,33 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			}
 			
 			nsYield++;
-			if(isGoodHit) nsHits++; 	
+			if(isGoodHit)
+			{
+				nsHits++;
+
+				if(t1 && t2) trigNph++;
+
+				// individual vetos
+				if(vetoL)  vL++;
+				if(vetoR)  vR++;
+				if(vetoTR) vTR++;
+				if(vetoTL) vTL++;
+				if(vetoBR) vBR++;
+
+				// veto by triggers
+				if( veto1 && t1) vT1++;
+				if(!veto1 && t1) novt1++;
+				if((vetoTR || vetoTL || vetoBR) && t2) vT2++;
+
+				// veto both
+				if( veto1 && veto12 &&
+					t1 && t2)
+					vTA++;
+
+				if( !veto1 && !veto12 &&
+					t1 && t2)
+					novt12++;
+			}
 		} // end hit loop
 
 		// fit eventReco and save mean to angSpread
@@ -670,12 +768,23 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	{
 		FindPeak(cangle,spr, prtangle);
 		nph = nsHits/(Double_t)nsEvents;
+		//vL  /= (Double_t)nsEvents;
+		//vR  /= (Double_t)nsEvents;
+		//vTR /= (Double_t)nsEvents;
+		//vTL /= (Double_t)nsEvents;
+		//vBR /= (Double_t)nsEvents;
+		trigNph /= (Double_t)trig12;
+		vT1 /= (Double_t)vtrg1;
+		vT2 /= (Double_t)vtrg2;
+		vTA /= (Double_t)vtrg12;
+		novt1 /= (Double_t)enov1;
+		novt12 /= (Double_t)enov12;
 		yield = nsYield/(Double_t)nsEvents;
 		spr = spr*1000;
 		trr = spr/sqrt(nph);
 		theta = prtangle;
 		par3 = fEvent->GetTest1();
-		std::cout<<"RES   "<<spr << "   N "<< nph << " trr  "<<trr<<std::endl; 
+		
 		tree.Fill();
 	}
 	else
@@ -714,18 +823,26 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		if(fVerbose) gROOT->SetBatch(0);
 		tree.Fill();
 	}
+
+	cout << "\n\n\n\n" << endl;
+	cout << "TOTAL GOOD EVENTS " << nsEvents << endl;
+	cout << "TRIGGER 1 EVENTS  " << trig1 << endl;
+	cout << "TRIGGER 2 EVENTS  " << trig2 << endl;
+	cout << "COINCIDENCE EVENTS " << trig12 << endl;
 	/*fHist0->Write();
 	fHist1->Write();
 	fHist2->Write();
 	fHist3->Write();
 	fHist4->Write();
 	fHist5->Write();*/
-	aSpreadP->Write();
-	aSpreadPi->Write();
+	//aSpreadP->Write();
+	//aSpreadPi->Write();
 	hLnDiffP->SetName("Psep");
 	hLnDiffP->Write();
 	hLnDiffPi->SetName("Pisep");
 	hLnDiffPi->Write();
+	file.Remove(eRecoP); // don't write these to file
+	file.Remove(eRecoPi);
 	file.Write();
 }
 

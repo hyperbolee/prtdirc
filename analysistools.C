@@ -50,10 +50,10 @@ void DrawWait(TObject *&obj)
 /*
   Set default style for all macros
 */
-void SetStyle(bool batch = 1)
+void SetStyle(bool batch = 1, int optfit = 1)
 {
 	gROOT->SetBatch(batch); // don't draw to screen
-	gStyle->SetOptFit(1); // show fit parameters
+	gStyle->SetOptFit(optfit); // show fit parameters
 	gStyle->SetLegendBorderSize(0); // no border on legend
 	gErrorIgnoreLevel = kWarning; // ignore 'Info in...' messages
 }
@@ -204,6 +204,7 @@ double* SpecSearch(TSpectrum *&spec, TH1D *&hist, TF1 *&fit, double range = 0.03
 TH1D* ThetaCorr( TTree *&tree,
 				 bool prot = 1,
 				 TString pidcut = "PID>1000",
+				 double *&shifts,
 				 TString corrtitle = "theta",
 				 int bins = 120 )
 {
@@ -245,6 +246,7 @@ TH1D* ThetaCorr( TTree *&tree,
 		mcpHist[mcpid]->GetXaxis()->UnZoom();
 		
 		double shift =  angle - mcpfit->GetParameter(1);
+		shifts[mcpid] = shift;
 		//cout << "shift\t" << shift << endl;
 
 		tree->Project(mcpname,Form("theta+%f",shift),cut);

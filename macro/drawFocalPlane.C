@@ -42,7 +42,7 @@ double findVertex(TVector3 v1,TVector3 m1, TVector3 v2,TVector3 m2, TVector3* ne
 }
 
 
-void drawFocalPlane(TString infile="../build/hits.root", Double_t r1 = 48.8, Double_t r2 = 29.1, Int_t it1=0, Int_t it2=0, Double_t energy=-1){
+void drawFocalPlane(TString infile="../build/hits.root", Double_t r1 = 48.8, Double_t r2 = 29.1, Int_t it1=0, Int_t it2=0, Double_t energy=3){
   gSystem->Load("../build/libprtdirclib.so");
   PrtInit(infile,0);
   gStyle->SetOptStat(0);
@@ -58,9 +58,9 @@ void drawFocalPlane(TString infile="../build/hits.root", Double_t r1 = 48.8, Dou
   Int_t count(0);
   for (Int_t ievent=0; ievent<nevents; ievent++){
     PrtNextEvent(ievent,1000);
-    Int_t nhits = fEvent->GetHitSize();
+    Int_t nhits = prt_event->GetHitSize(); //fEvent->GetHitSize();
     if(nhits!=2) continue;
-    for(Int_t h=0; h<nhits; h++) hit[h] = fEvent->GetHit(h);
+    for(Int_t h=0; h<nhits; h++) hit[h] = prt_event->GetHit(h); //fEvent->GetHit(h);
     Double_t d = findVertex(hit[0].GetGlobalPos(),hit[0].GetMomentum().Unit(),hit[1].GetGlobalPos(),hit[1].GetMomentum().Unit(), &res);
     if(d<1){
       Double_t x = -(res.X()+radiatorL/2.)/10.;
@@ -86,7 +86,7 @@ void drawFocalPlane(TString infile="../build/hits.root", Double_t r1 = 48.8, Dou
   hFp1->Draw("colz");
   canvasAdd(Form("fp2_%d_%d",it1,it2),600,800);
   hFp2->Draw("colz");
-  canvasSave(0,"drawFocalPlane.C",1,"fp");
+  //canvasSave(0,"drawFocalPlane.C",1,"fp");
   
 }
 

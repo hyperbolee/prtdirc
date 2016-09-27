@@ -15,7 +15,7 @@ runtype=data
 events=10000
 force=false
 start_time=$(date +%s)
-statusline="Reco"
+statusline="Data Reco"
 
 # print sim options to screen
 showOpt ()
@@ -105,12 +105,12 @@ do
 	fi
 
 	lutname=../data/lut_${lensnm}
-	if [ -f ${lutname}.root ]
-	then
+	#if [ -f ${lutname}.root ]
+	#then
 		# make full reco if LUT exists
-		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${FILE} -o ${recoout}.root >> /dev/null &
-	fi
-	waitForMe ${cores} # hold your horses!
+		#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${FILE} -o ${recoout}.root >> /dev/null &
+	#fi
+	#waitForMe ${cores} # hold your horses!
 
 	if [ -f ${lutname}_cs_avr.root ]
 	then
@@ -120,13 +120,13 @@ do
 	fi
 	waitForMe ${cores} # hold your horses!
 
-	if [ -f ${lutname}_avr.root ]
-	then
+	#if [ -f ${lutname}_avr.root ]
+	#then
 		# make averaged reco if LUT exists
-		recoout=${path}/reco/avr/reco_${runname}
-		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${FILE} -o ${recoout}_avr.root >> /dev/null &
-	fi
-	waitForMe ${cores} # hold your horses!
+		#recoout=${path}/reco/avr/reco_${runname}
+		#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${FILE} -o ${recoout}_avr.root >> /dev/null &
+	#fi
+	#waitForMe ${cores} # hold your horses!
 
 done
 
