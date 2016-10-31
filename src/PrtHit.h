@@ -33,6 +33,7 @@ public:
   TVector3 GetMomentum()     { return fMomentum; }
   TVector3 GetPosition()     { return fPosition; }
   Double_t GetCherenkovMC()  { return fCherenkovMC;}
+  TVector3 GetLensMom()      { return fLensMom; }
   
   Int_t GetMcpId()       { return fMcpId; }
   Int_t GetPixelId()     { return fPixelId; }
@@ -40,7 +41,8 @@ public:
   Int_t GetTdc() { return fTdc;}
   Int_t GetTrb() { return fTrb;}
   Int_t GetMultiplicity() { return fMultiplicity; }
-  Double_t GetLeadTime() { return fLeadTime; } 
+  Double_t GetLeadTime() { return fLeadTime; }
+  Double_t GetPropTime() { return fPropTime; }
   Double_t GetTotTime() { return fTotTime; } 
     
   // Mutators
@@ -55,6 +57,7 @@ public:
   void SetMomentum(TVector3 val)    { fMomentum = val; }
   void SetPosition(TVector3 val)    { fPosition = val; }
   void SetCherenkovMC(Double_t val)    { fCherenkovMC = val; }
+  void SetLensMom(TVector3 val)     { fLensMom = val; }
 
   
   void SetMcpId(Int_t val)   { fMcpId = val; }
@@ -63,7 +66,8 @@ public:
   void SetTdc(Int_t val) { fTdc = val; }
   void SetTrb(Int_t val) { fTrb = val; }
   void SetMultiplicity(Int_t val) { fMultiplicity = val; }
-  void SetLeadTime(Double_t val) { fLeadTime=val; } 
+  void SetLeadTime(Double_t val) { fLeadTime=val; }
+  void SetPropTime(Double_t val) {fPropTime = val; }
   void SetTotTime(Double_t val) { fTotTime=val; } 
 
 protected:
@@ -78,6 +82,7 @@ protected:
   TVector3 fDigiPos;
   TVector3 fMomentum;
   TVector3 fPosition;
+  TVector3 fLensMom; // momentum just before lens
   Double_t fCherenkovMC;
   
   Int_t fMcpId;
@@ -86,7 +91,8 @@ protected:
   Int_t fTdc;
   Int_t fTrb;
   Int_t fMultiplicity;
-  Double_t fLeadTime;    
+  Double_t fLeadTime;
+  Double_t fPropTime;
   Double_t fTotTime;  
 
   ClassDef(PrtHit,4)

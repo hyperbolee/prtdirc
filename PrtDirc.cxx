@@ -117,6 +117,7 @@ int main(int argc,char** argv)
   if(beamZ.size())   PrtManager::Instance()->SetBeamZ(atof(beamZ));
   if(timeRes.size())   PrtManager::Instance()->SetTimeRes(atof(timeRes));
 
+
   //if(beamDimension.size())PrtManager::Instance()->SetTest1(atoi(beamDimension));
 
   if(runtype == 2 || runtype == 3){

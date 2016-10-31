@@ -61,19 +61,30 @@ PrtDetectorConstruction::PrtDetectorConstruction()
 	}
 
 	if(fMcpLayout == 2015){
-  
+		
+	}
+
+	if(fMcpLayout == 1){ // testing
+		//fPrizm[0] = 1500; // width between non-slanted sides
+		//fPrizm[1] = 500; // dist from bar to mcps
+		//fPrizm[3] = 1300; // height at bar interface from slanted edge to base
+		//fPrizm[2] = fPrizm[3]+fPrizm[1]*tan(45*deg); // lenght of mcp plane
+
+		//PrtManager::Instance()->SetPrismStepX(fPrizm[0]/2);
+		//PrtManager::Instance()->SetBeamX(fPrizm[0]/2 + fBar[1]/2);
+		
 	}
 
 	if(PrtManager::Instance()->GetRadiator()==2){
 		fBar[0] = 17.1;
 		fBar[1] = 174.8;
 		fBar[2] = 1224.9; 
-		fMirror[1] = 180;
+		fMirror[1] = 180; 
 	}
   
 	// X configuration
 	fPrismRadiatorStep = PrtManager::Instance()->GetPrismStepY();
-	if(fPrismRadiatorStep !=0 ) fPrismRadiatorStep = fBar[0]/2.-fPrizm[3]/2.+fPrismRadiatorStep;
+	//if(fPrismRadiatorStep !=0 ) fPrismRadiatorStep = fBar[0]/2.-fPrizm[3]/2.+fPrismRadiatorStep;
 	fCenterShift =  G4ThreeVector(0., 0., 0.);
 
 	if(fGeomId == 2015){
@@ -121,7 +132,8 @@ G4VPhysicalVolume* PrtDetectorConstruction::Construct(){
 	}
   
 	// The DIRC
-	G4Box* gDirc = new G4Box("gDirc",400.,200.,fBar[2]/2.+fPrizm[1]+50);
+	//G4Box* gDirc = new G4Box("gDirc",400.,200.,fBar[2]/2.+fPrizm[1]+50);
+	G4Box* gDirc = new G4Box("gDirc",400,500,fBar[2]/2.+fPrizm[1]+50);
 	lDirc = new G4LogicalVolume(gDirc,defaultMaterial,"lDirc",0,0,0);
 
 	G4ThreeVector dircpos = G4ThreeVector(0., 0., 0.);
@@ -516,8 +528,8 @@ G4VPhysicalVolume* PrtDetectorConstruction::Construct(){
 
 	// modify mirror reflectivity for photon yield testing
 	// reduce reflectivity by 20%
-	for(int i=0; i<num; i++)
-		ReflectivityMirrorBar[i] -= 0.2;
+	//for(int i=0; i<num; i++)
+	//	ReflectivityMirrorBar[i] -= 0.2;
 
 	G4MaterialPropertiesTable *MirrorMPT = new G4MaterialPropertiesTable();
 	MirrorMPT->AddProperty("REFLECTIVITY", PhotonEnergy, ReflectivityMirrorBar, num);

@@ -103,7 +103,7 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
 	G4ThreeVector localpos = touchable->GetHistory()->GetTopTransform().TransformPoint(globalpos);
 	G4ThreeVector translation = touchable->GetHistory()->GetTopTransform().Inverse().TransformPoint(G4ThreeVector(0,0,0));
 	G4ThreeVector inPrismpos = touchable->GetHistory()->GetTransform( 1 ).TransformPoint(globalpos);
-	G4ThreeVector g4mom = track->GetMomentum(); //track->GetVertexMomentumDirection(); //
+	G4ThreeVector g4mom = track->GetVertexMomentumDirection(); //track->GetMomentum(); 
 	G4ThreeVector g4pos = track->GetVertexPosition();
  
 	TVector3 globalPos(inPrismpos.x(),inPrismpos.y(),inPrismpos.z());
@@ -112,6 +112,7 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
 	translation=touchable->GetHistory()->GetTransform( 1 ).TransformPoint(translation);
 	TVector3 digiPos(translation.x(),translation.y(),translation.z());
 	TVector3 momentum(g4mom.x(),g4mom.y(),g4mom.z());
+
 	G4ThreeVector lp = touchable->GetHistory()->GetTransform(1).TransformPoint(g4pos); //pos in wDirc
 	TVector3 position(lp.x(),lp.y(),lp.z());
   
@@ -156,6 +157,14 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
 	hit.SetDigiPos(digiPos);
 	hit.SetPosition(position);
 	hit.SetMomentum(momentum);
+	hit.SetLensMom(PrtManager::Instance()->GetLensMom());
+	//hit.SetPropTime(PrtManager::Instance()->GetPropTime());
+
+	// TVector3 phmom = hit.GetMomentum();
+	// TVector3 lnmom = hit.GetLensMom();
+	// std::cout << "VERTEX\t" << phmom.X() << "\t" << phmom.Y() << "\t" << phmom.Z() << std::endl;
+	// std::cout << "B4LENS\t" << lnmom.X() << "\t" << lnmom.Y() << "\t" << lnmom.Z() << std::endl;
+	// std::cout << "ANGLE\t" << phmom.Angle(lnmom) << std::endl << std::endl;
 	if(PrtManager::Instance()->GetRunType()==6){
 		G4ThreeVector mominend = step->GetPostStepPoint()->GetMomentum();
 		TVector3 mominendv(mominend.x(),mominend.y(),mominend.z());

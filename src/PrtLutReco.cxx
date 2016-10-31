@@ -175,7 +175,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	Double_t theta(0),phi(0), trr(0), nph(0), yield(0),
 		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0),test3(0),separation(0);
 	Double_t minChangle(0);
-	Double_t maxChangle(1);
+	Double_t maxChangle(4);
 	Double_t rad = TMath::Pi()/180.;
 	Double_t criticalAngle = asin(1.00028/1.47125); // n_quarzt = 1.47125; //(1.47125 <==> 390nm)
 	TRandom rnd;
@@ -201,25 +201,25 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	TTree tree("dirc","SPR");
 	tree.Branch("spr", &spr,"spr/D");
 	tree.Branch("trr", &trr,"trr/D");
-	tree.Branch("nph",&nph,"nph/D"); //nph trig1
+	tree.Branch("nph",&nph,"nph/D"); //nph trig1+2 no veto
 	//tree.Branch("yield",&yield,"yield/D");
 	//tree.Branch("vetoL",&vL,"vL/D");
 	//tree.Branch("vetoR",&vR,"vR/D");
 	//tree.Branch("vetoTR",&vTR,"vTR/D");
 	//tree.Branch("vetoTL",&vTL,"vTL/D");
 	//tree.Branch("vetoBR",&vBR,"vBR/D");
-	tree.Branch("trigNph",&trigNph,"trigNph/D"); //nph trig1+2
-	tree.Branch("vetoT1",&vT1,"vT1/D"); //nph veto1+trig1
-	tree.Branch("vetoT2",&vT2,"vT2/D");//nph veto2+trig2
-	tree.Branch("vetoTA",&vTA,"vTA/D");//nph veto1+veto2+trig1+trig2
-	tree.Branch("novt1",&novt1,"novt1/D");
-	tree.Branch("novt12",&novt12,"novt12/D");
-	tree.Branch("etrig1",&trig1,"trig1/I");
+	//tree.Branch("trigNph",&trigNph,"trigNph/D"); //nph trig1+2
+	//tree.Branch("vetoT1",&vT1,"vT1/D"); //nph veto1+trig1
+	//tree.Branch("vetoT2",&vT2,"vT2/D");//nph veto2+trig2
+	//tree.Branch("vetoTA",&vTA,"vTA/D");//nph veto1+veto2+trig1+trig2
+	//tree.Branch("novt1",&novt1,"novt1/D");
+	//tree.Branch("novt12",&novt12,"novt12/D");
+	//tree.Branch("etrig1",&trig1,"trig1/I");
 	//tree.Branch("etrig2",&trig2,"trig2/I");
-	tree.Branch("etrig12",&trig12,"trig12/I");
-	tree.Branch("eveto1",&vtrg1,"vtrg1/I");
+	//tree.Branch("etrig12",&trig12,"trig12/I");
+	//tree.Branch("eveto1",&vtrg1,"vtrg1/I");
 	//tree.Branch("eveto2",&vtrg2,"vtrg2/I");
-	tree.Branch("eveto12",&vtrg12,"vtrg12/I");
+	//tree.Branch("eveto12",&vtrg12,"vtrg12/I");
 	//tree.Branch("enov1",&enov1,"enov1/D");
 	//tree.Branch("enov12",&enov12,"enov12/D");
 	tree.Branch("cangle",&cangle,"cangle/D");
@@ -237,7 +237,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 	test1 = PrtManager::Instance()->GetTest1();
 
-    Int_t baramb(0);
+    double  baramb(0);
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0), fAngle(0);
 	Double_t tTheta(0), tPhi(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
@@ -274,7 +274,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("track",&prtangle,"prtangle/D"); // track
 	lTree->Branch("aTrack",&assume,"assume/D"); // assumed track
-	lTree->Branch("baramb",&baramb,"baramb/I"); // bar ambiguity correct?
+	lTree->Branch("baramb",&baramb,"baramb/D"); // bar ambiguity correct?
 	lTree->Branch("time",&tTime,"tTime/D"); // arrival time of hit
 	lTree->Branch("expt",&tExpt,"tExpt/D"); // expected arrival time
 	lTree->Branch("diff",&tDiff,"tDiff/D"); // difference in times
@@ -306,6 +306,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	hTree->Branch("tof1",&tTof1,"tTof1/D");
 	hTree->Branch("tof2",&tTof2,"tTof2/D");
 	hTree->Branch("trig",&tTrig,"tTrig/D");
+	hTree->Branch("theta",&baramb,"baramb/D");
   
 	Int_t nEvents = fChain->GetEntries();
 	if(end==0) end = nEvents;
@@ -442,6 +443,11 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			//if(chan == trig_chan) tTrig = hitTime;
 
 		}
+
+		if(!t1 || !t2)
+			if(!simulation)
+				continue;
+		
 		tTof1 = rt1;
 		tTof2 = rt2;
 
@@ -470,7 +476,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		{
 			// get hit object
 			fHit = fEvent->GetHit(h);
-			hitTime = fHit.GetLeadTime();
+			hitTime = fHit.GetPropTime(); //fHit.GetLeadTime();
 			
 			// set hit information for trees
 			tTime = hitTime;
@@ -479,8 +485,6 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			tChan = fHit.GetChannel();
 			tX    = fHit.GetGlobalPos().X();
 			tY    = fHit.GetGlobalPos().Y();
-			tMCP  = fHit.GetMcpId();
-			tPix  = fHit.GetPixelId() - 1;
 
 			if(simulation) // get wavelength from sim
 				tLambda = fHit.GetTotTime();
@@ -574,6 +578,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			hTree->Fill();
 			Bool_t isGoodHit(false);
 			Int_t size =fLutNode[sensorId]->Entries();
+			
 			for(int i=0; i<size; i++){
 				weight = 1; //fLutNode[sensorId]->GetWeight(i);
 				if(csCorr)
@@ -588,20 +593,21 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 				{
 					if(u == 0) dir = dird;
 					if(u == 1) dir.SetXYZ( -dird.X(), dird.Y(), dird.Z());
-					if(u == 2) dir.SetXYZ( dird.X(),-dird.Y(),  dird.Z()); //no need when no divergence in vertical plane
-					if(u == 3) dir.SetXYZ( -dird.X(),-dird.Y(), dird.Z()); //no need when no divergence in vertical plane
+					// if(u == 2) dir.SetXYZ( dird.X(),-dird.Y(),  dird.Z()); //no need when no divergence in vertical plane
+					// if(u == 3) dir.SetXYZ( -dird.X(),-dird.Y(), dird.Z()); //no need when no divergence in vertical plane
+					// if(u == 4) dir.SetXYZ( dird.X(), dird.Y(), -dird.Z());
+					// if(u == 5) dir.SetXYZ( -dird.X(), dird.Y(), -dird.Z());
+					// if(u == 6) dir.SetXYZ( dird.X(),-dird.Y(),  -dird.Z()); //no need when no divergence in vertical plane
+					// if(u == 7) dir.SetXYZ( -dird.X(),-dird.Y(), -dird.Z()); //no need when no divergence in vertical plane
+				  
 					if(reflected) dir.SetXYZ( dir.X(), dir.Y(), -dir.Z());
+					//cout << "u " << u << endl;
 					if(dir.Angle(fnX1) < criticalAngle || dir.Angle(fnY1) < criticalAngle) continue;
 
-					TVector3 phmom = fHit.GetMomentum(); // photon momentum
-					if( simulation && // product will be > 0 if components have the same sign
-						( phmom.X()*dir.X() > 0 ) &&
-						( phmom.Y()*dir.Y() > 0 ) &&
-						( phmom.Z()*dir.Z() > 0 )  )
-						baramb = 1;
-					
-					else
-						baramb = 0;
+					TVector3 phmom = fHit.GetLensMom(); // photon momentum
+					double amb_angle = phmom.Angle(dir); // angle between photon momentum and LUT momentum
+
+					baramb = fHit.GetPropTime(); //amb_angle;
 						
 
 					luttheta = dir.Theta();  
@@ -618,10 +624,11 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 					
 					fHist3->Fill(fabs((bartime+evtime)),hitTime);
 					tangle = momInBar.Angle(dir);
+					
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
 
-						//if(0.7<tangle && tangle<0.9)
+						if(0.7<tangle && tangle<0.9)
 						if( fabs(tangle-fAngle)<0.035 ) // thC is within +-35 mrad of expected angle?
 						{
 							if(fabs((bartime+evtime)-hitTime)<3)
@@ -656,8 +663,9 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 							eRecoP->Fill(tangle);
 						if(tPID<1000 )//&& abs(tDiff)<1)
 							eRecoPi->Fill(tangle);
-							
+
 						lTree->Fill();
+						//lTree->Print();
 
 						if(fVerbose==3)
 						{	      
@@ -678,7 +686,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			nsYield++;
 			if(isGoodHit)
 			{
-				nsHits++;
+				if(simulation || (t1 && t2))
+					nsHits++;
 
 				if(t1 && t2) trigNph++;
 
@@ -784,8 +793,29 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		trr = spr/sqrt(nph);
 		theta = prtangle;
 		par3 = fEvent->GetTest1();
+
+		prt_normalize(hLnDiffP,hLnDiffPi);
+		hLnDiffP->SetLineColor(2);
+
+		TF1 *ff;
+		Double_t m1,m2,s1,s2; 
+		if(hLnDiffP->GetEntries()>10){
+			hLnDiffP->Fit("gaus","S");
+			ff = hLnDiffP->GetFunction("gaus");
+			m1=ff->GetParameter(1);
+			s1=ff->GetParameter(2);
+		}
+		if(hLnDiffPi->GetEntries()>10){
+			hLnDiffPi->Fit("gaus","S");
+			ff = hLnDiffPi->GetFunction("gaus");
+			m2=ff->GetParameter(1);
+			s2=ff->GetParameter(2);
+		}
+		separation = (fabs(m2-m1))/(0.5*(s1+s2));
+		std::cout<<"separation "<< separation <<std::endl;
 		
 		tree.Fill();
+		//tree.Print();
 	}
 	else
 	{

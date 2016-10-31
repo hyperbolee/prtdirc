@@ -12,8 +12,8 @@ lensid=3
 lensnm=3CS
 events=200000
 lutreg=true
-lutavg=false
-lutcs=false
+lutavg=true
+lutcs=true
 force=false
 
 # print lut options to screen
@@ -113,7 +113,7 @@ fi
 seed=${start_time}
 ./prtdirc -s 1 -a 180 -x "opticalphoton" -p "3.18 eV" -c 2015 -gz 378 -gx 85 -gsx 67.5 -w 0 -g 0 -h 1 -b 1 -e ${events} -l ${lensid} -o ${lutname}_tmp.root >> /dev/null
 
-wait
+waitForMe 1
 printf "\n"
 
 # make special (avg or cs) table if flag set

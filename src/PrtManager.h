@@ -55,6 +55,7 @@ public:
   void SetRadiatorH(double val){ fRadiatorH = val; }
   void SetParticle(int val){ fParticle = val; }
   void SetMomentum(TVector3 val){ fMomentum = val; if(fRunType==0) fEvent->SetMomentum(fMomentum);}
+  void SetLensMom(TVector3 val){ fLensMom = val; }
   void SetCurrentCherenkov(double val){ fCurrentCherenkov = val; }
   void SetShift(double val){ fShift = val; }
   void SetTest1(double val){ fTest1 = val; }
@@ -65,6 +66,7 @@ public:
   void SetBeamX(double val){ fBeamX = val; }
   void SetBeamZ(double val){ fBeamZ = val; }
   void SetTimeRes(double val){ fTimeRes = val; }
+  void SetPropTime(double val){ fPropTime = val; }
   void SetInfo(TString val){ fInfo = val; }
   void AddInfo(TString val){ fInfo += val + "\n"; }
 
@@ -82,6 +84,7 @@ public:
   double GetRadiatorH(){ return fRadiatorH; }
   int GetParticle(){ return fParticle; }
   TVector3 GetMomentum(){ return fMomentum; }
+  TVector3 GetLensMom(){ return fLensMom; }
   double GetCurrentCherenkov(){ return fCurrentCherenkov; }
   double GetShift(){ return fShift; }
   double GetTest1(){ return fTest1; }
@@ -92,6 +95,7 @@ public:
   double GetBeamX(){ return fBeamX; }
   double GetBeamZ(){ return fBeamZ; }
   double GetTimeRes(){ return fTimeRes; }
+  double GetPropTime(){ return fPropTime; }
   TString GetOutName(){return fOutName;}
   TString GetInfo() { return fInfo; }
 
@@ -109,6 +113,7 @@ private:
   int fParticle;
   double fBeamDimension;
   TVector3 fMomentum;
+  TVector3 fLensMom; // momentum of photon just before lens
   TClonesArray *fLut;
   TClonesArray *fTrackInfoArray;
   double fCurrentCherenkov;
@@ -121,6 +126,7 @@ private:
   double fBeamX;
   double fBeamZ;
   double fTimeRes;
+  double fPropTime;
   TString fOutName;
   TString fInfo;
 

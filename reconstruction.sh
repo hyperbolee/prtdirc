@@ -7,7 +7,7 @@
 # Written by Lee Allison, March 3, 2016
 
 # default values for ALL THE THINGS
-cores=4
+cores=3
 lensid=3
 lensnm=3CS
 study=151
@@ -129,6 +129,7 @@ do
 	#waitForMe ${cores} # hold your horses!
 
 done
+waitForMe 1 # wait for all processes to finish
 
 # make single root file after reconstruction
 # hadd -f ${path}/reco/reco_beam_${study}.root  ${path}/reco/*spr.root
