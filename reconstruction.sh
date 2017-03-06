@@ -112,11 +112,12 @@ do
 	#fi
 	#waitForMe ${cores} # hold your horses!
 
+	# to run without mcp angle correction remove "-mcp 1"
 	if [ -f ${lutname}_cs_avr.root ]
 	then
 		# make charge-sharing reco if LUT exists
 		recoout=${path}/reco/cs/reco_${runname}
-		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_cs_avr.root -i ${FILE} -o ${recoout}_cs_avr.root >> /dev/null &
+		./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_cs_avr.root -i ${FILE} -o ${recoout}_cs_avr.root -mcp 1 >> /dev/null &
 	fi
 	waitForMe ${cores} # hold your horses!
 

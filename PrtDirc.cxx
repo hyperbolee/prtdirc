@@ -49,7 +49,7 @@ int main(int argc,char** argv)
   TApplication theApp("App", 0, 0);
 
   G4String macro, events, geometry, radiator, physlist, outfile, 
-    session,geomAng,batchmode,lensId,particle,momentum,testVal1,testVal2,testVal3,
+	  session,geomAng,batchmode,lensId,particle,momentum,testVal1,testVal2,testVal3, mcpCorr,
     prismStepX,prismStepY,beamZ,beamX,timeRes,
     beamDimension, mcpLayout, infile = "hits.root", lutfile = "../data/lut.root";
   G4int firstevent(0), runtype(0), verbose(0);
@@ -67,6 +67,7 @@ int main(int argc,char** argv)
     else if ( G4String(argv[i]) == "-a" ) geomAng   = argv[i+1];
     else if ( G4String(argv[i]) == "-b" ) batchmode = argv[i+1];
     else if ( G4String(argv[i]) == "-f" ) firstevent= atoi(argv[i+1]);
+	else if ( G4String(argv[i]) == "-mcp" ) mcpCorr    = argv[i+1];
     else if ( G4String(argv[i]) == "-e" ) events    = argv[i+1];
     else if ( G4String(argv[i]) == "-l" ) lensId    = argv[i+1];
     else if ( G4String(argv[i]) == "-x" ) particle  = argv[i+1];
@@ -95,11 +96,13 @@ int main(int argc,char** argv)
   if(outfile=="" && runtype == 6) outfile = "focalplane.root";  // focal plane simulation
   if(outfile=="" && (runtype == 2 || runtype == 3)) outfile = "reco.root"; // reconstruction
 
+  
   if(batchmode.size()) gROOT->SetBatch(kTRUE);
   if(!events.size()) events = "1";
   PrtManager::Instance(outfile,runtype);
 
-
+  // default for mcp corrections is on
+  if(mcpCorr.size())  PrtManager::Instance()->SetMcpCorr(0);
   if(physlist.size()) PrtManager::Instance()->SetPhysList(atoi(physlist));
   if(geometry.size()) PrtManager::Instance()->SetGeometry(atoi(geometry));
   if(radiator.size()) PrtManager::Instance()->SetRadiator(atoi(radiator));

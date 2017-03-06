@@ -68,6 +68,7 @@ public:
   void SetTimeRes(double val){ fTimeRes = val; }
   void SetPropTime(double val){ fPropTime = val; }
   void SetInfo(TString val){ fInfo = val; }
+  void SetMcpCorr(int val){ fMcpCorr = val; }
   void AddInfo(TString val){ fInfo += val + "\n"; }
 
   // Accessors
@@ -98,6 +99,7 @@ public:
   double GetPropTime(){ return fPropTime; }
   TString GetOutName(){return fOutName;}
   TString GetInfo() { return fInfo; }
+  bool GetMcpCorr() { return fMcpCorr; }
 
 private: 
   int fRunType;
@@ -129,6 +131,8 @@ private:
   double fPropTime;
   TString fOutName;
   TString fInfo;
+
+  bool fMcpCorr;
 
   TVector3 fnX1;
   TVector3 fnY1;

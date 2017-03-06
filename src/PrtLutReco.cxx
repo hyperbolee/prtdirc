@@ -25,6 +25,8 @@
 #include <TLegend.h>
 #include "../../prttools/prttools.C"
 
+#include "../analysis.C"
+
 
 using std::cout;
 using std::endl;
@@ -36,8 +38,8 @@ TH2F*  fHist3 = new TH2F("time3",";calculated time [ns];measured time [ns]", 500
 TH2F*  fHist4 = new TH2F("time4",";#theta_{c}sin(#varphi_{c});#theta_{c}cos(#varphi_{c}", 100,-1,1, 100,-1,1);
 TH2F*  fHist5 = new TH2F("time5",";#theta_{c}sin(#varphi_{c});#theta_{c}cos(#varphi_{c}", 100,-1,1, 100,-1,1);
 
-TH1F *hLnDiffP = new TH1F("hLnDiffP",  ";ln L(p) - ln L(#pi);entries [#]",200,-30,30);
-TH1F *hLnDiffPi = new TH1F("hLnDiffPi",";ln L(p) - ln L(#pi);entries [#]",200,-30,30);
+TH1F *hLnDiffP = new TH1F("hLnDiffP",  ";ln L(p) - ln L(#pi);entries [#]",334,-50,50);
+TH1F *hLnDiffPi = new TH1F("hLnDiffPi",";ln L(p) - ln L(#pi);entries [#]",334,-50,50);
 
 TF1 *gF1 = new TF1("gaus0","[0]*exp(-0.5*((x-[1])/[2])*(x-[1])/[2])",0.7,0.9);
 TF1 *gF2= new TF1("gaus0","[0]*exp(-0.5*((x-[1])/[2])*(x-[1])/[2])",0.7,0.9);
@@ -173,9 +175,9 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	Int_t lensID(0);
 	Double_t beam(0);
 	Double_t theta(0),phi(0), trr(0), nph(0), yield(0),
-		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0),test3(0),separation(0);
+		par1(0), par2(0), par3(0), par4(0), par5(0), par6(0), test1(0), test2(0),test3(0),separation(0),oldseparation(0);
 	Double_t minChangle(0);
-	Double_t maxChangle(4);
+	Double_t maxChangle(1);
 	Double_t rad = TMath::Pi()/180.;
 	Double_t criticalAngle = asin(1.00028/1.47125); // n_quarzt = 1.47125; //(1.47125 <==> 390nm)
 	TRandom rnd;
@@ -196,6 +198,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	int trig1(0), trig2(0), trig12(0); // for trigger photon yield
 	int vtrg1(0), vtrg2(0), vtrg12(0); // for veto counter
 	int enov1(0), enov12(0);
+
+	int simulation(0);
 	
 	TFile file(outFile,"recreate");
 	TTree tree("dirc","SPR");
@@ -224,6 +228,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	//tree.Branch("enov12",&enov12,"enov12/D");
 	tree.Branch("cangle",&cangle,"cangle/D");
 	tree.Branch("separation",&separation,"separation/D");
+	tree.Branch("oldseparation",&oldseparation,"oldseparation/D");
 	tree.Branch("par3",&par3,"par3/D");
 	tree.Branch("par4",&par4,"par4/D");
 	tree.Branch("par5",&par5,"par5/D");
@@ -234,6 +239,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	tree.Branch("beam",&beam,"beam/D");
 	tree.Branch("theta",&theta,"theta/D");
 	tree.Branch("phi",&phi,"phi/D");
+	tree.Branch("type",&simulation,"simulation/I");
 
 	test1 = PrtManager::Instance()->GetTest1();
 
@@ -241,6 +247,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	Int_t tMCP(0), tPix(0), tPID(0), tNRef(0), tNRefLUT(0), tHits(0), tPi(0), tProt(0), tChan(0);
 	Double_t  tTof1(0), tTof2(0), tTrig(0), tX(0), tY(0), fAngle(0);
 	Double_t tTheta(0), tPhi(0), tLambda(0), tTime(0), tExpt(0), tDiff(0), tPath(0), tPathLUT(0), assume(0);
+	Double_t tShift(0);
 
 	Int_t ievent;
 
@@ -251,6 +258,12 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 	bool t1(false), t2(false), t12(false); // triggers hit?
 	bool veto1(false), veto12(false); // vetos hit?
+
+	// want theta branch to be final the same after MCP corrections
+	// so if correction is flagged, we need the uncorrected theta
+	// values to have a different name
+	bool mcpCorr = PrtManager::Instance()->GetMcpCorr();
+	TString angName = mcpCorr ? "thetaOld" : "theta";
 
 	// tree for ambiguity information (theta_C, etc)
 	TTree *lTree = new TTree("reco","reconstruction");
@@ -269,7 +282,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	lTree->Branch("LUTnref",&tNRefLUT,"tNRefLUT/I"); // reflections
 	lTree->Branch("LUTpath",&tPathLUT,"tPathLUT/D"); // path ID
 	lTree->Branch("hits",&tHits,"tHits/I");
-	lTree->Branch("theta",&tTheta,"tTheta/D"); // theta_C
+	lTree->Branch(angName,&tTheta,"tTheta/D"); // theta_C
+	//lTree->Branch("thetaShift",&tShift,"tShift/D"); // shifted thetaC
 	lTree->Branch("phi",&tPhi,"tPhi/D"); // azimuth angle
 	lTree->Branch("lambda",&tLambda,"tLambda/D"); // wave length
 	lTree->Branch("track",&prtangle,"prtangle/D"); // track
@@ -330,7 +344,6 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	TH1D *aSpreadP = new TH1D("aSpreadP","angSpreadP",200,0.6,1);
 	TH1D *aSpreadPi = new TH1D("aSpreadPi","angSpreadPi",200,0.6,1);
 
-	bool simulation(false);
 	gROOT->SetBatch(1);
 	for (ievent=start; ievent<end; ievent++)
 	{
@@ -349,8 +362,11 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			prtangle = fEvent->GetAngle() + shift;
 			studyId = fEvent->GetGeometry();
 			lensID = fEvent->GetLens();
-			beam = fEvent->GetMomentum().z();
+			beam = fEvent->GetMomentum().Mag();
 			simulation = fEvent->GetType();
+
+			// simulation saves in units of eV
+			if(simulation) beam /= 1000;
 
 			if(!simulation)
 			{ // beam center correction for data
@@ -367,9 +383,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			}
 		}
 		
-		Double_t momentum=fEvent->GetMomentum().Mag();
+		Double_t momentum=beam;//fEvent->GetMomentum().Mag();
 		int tofPid(0);
-		if(simulation) momentum /= 1000;
 		tofPid=fEvent->GetParticle();
 		if(tofPid==212) tofPid=211; //why?
 
@@ -444,6 +459,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 		}
 
+		// if trigger 1 and 2 aren't hit continue
 		if(!t1 || !t2)
 			if(!simulation)
 				continue;
@@ -476,7 +492,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		{
 			// get hit object
 			fHit = fEvent->GetHit(h);
-			hitTime = fHit.GetPropTime(); //fHit.GetLeadTime();
+			hitTime = fHit.GetLeadTime();
 			
 			// set hit information for trees
 			tTime = hitTime;
@@ -593,8 +609,8 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 				{
 					if(u == 0) dir = dird;
 					if(u == 1) dir.SetXYZ( -dird.X(), dird.Y(), dird.Z());
-					// if(u == 2) dir.SetXYZ( dird.X(),-dird.Y(),  dird.Z()); //no need when no divergence in vertical plane
-					// if(u == 3) dir.SetXYZ( -dird.X(),-dird.Y(), dird.Z()); //no need when no divergence in vertical plane
+					if(u == 2) dir.SetXYZ( dird.X(),-dird.Y(),  dird.Z()); //no need when no divergence in vertical plane
+					if(u == 3) dir.SetXYZ( -dird.X(),-dird.Y(), dird.Z()); //no need when no divergence in vertical plane
 					// if(u == 4) dir.SetXYZ( dird.X(), dird.Y(), -dird.Z());
 					// if(u == 5) dir.SetXYZ( -dird.X(), dird.Y(), -dird.Z());
 					// if(u == 6) dir.SetXYZ( dird.X(),-dird.Y(),  -dird.Z()); //no need when no divergence in vertical plane
@@ -624,18 +640,20 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 					
 					fHist3->Fill(fabs((bartime+evtime)),hitTime);
 					tangle = momInBar.Angle(dir);
+					tShift = tangle;
+					//meanShift(simulation,prtangle,tShift,tofPid, tMCP);
 					
 					if(tangle > minChangle && tangle < maxChangle){
 						fHist->Fill(tangle ,weight);
 
 						if(0.7<tangle && tangle<0.9)
-						if( fabs(tangle-fAngle)<0.035 ) // thC is within +-35 mrad of expected angle?
-						{
-							if(fabs((bartime+evtime)-hitTime)<3)
-								isGoodHit=true;
+							if( fabs(tangle-fAngle)<0.035 ) // thC is within +-35 mrad of expected angle?
+							{
+								if(fabs((bartime+evtime)-hitTime)<3)
+									isGoodHit=true;
 								//if(fabs(tangle-0.815)<0.07) isGoodHit=true; // test2
-							//if(studyId>=160) isGoodHit=true;
-						}
+								//if(studyId>=160) isGoodHit=true;
+							}
 
 						if(true && tangle>0.4 && tangle<0.9 ){
 							Double_t f1 = gF1->Eval(tangle);
@@ -766,13 +784,20 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	
 	// draw spread histograms for testing
 	/*TCanvas *c1 = new TCanvas(); c1->cd();
-	aSpreadP->Draw();
-	aSpreadPi->SetLineColor(kRed);
-	aSpreadPi->Draw("same");
-	c1->Update();
-	c1->WaitPrimitive();
-	delete c1;*/
-  
+	  aSpreadP->Draw();
+	  aSpreadPi->SetLineColor(kRed);
+	  aSpreadPi->Draw("same");
+	  c1->Update();
+	  c1->WaitPrimitive();
+	  delete c1;*/
+
+	
+	TH1F *oldLnP = (TH1F*)hLnDiffP->Clone("oldPsep");
+	TH1F *oldLnPi = (TH1F*)hLnDiffPi->Clone("oldPisep");
+	if(mcpCorr) mcpCorrection(lTree, beam, prtangle);
+	if(mcpCorr) llCorrection(lTree, hLnDiffP, gF1, hLnDiffPi, gF2);
+	//if(mcpCorr) llCorrection(lTree, testP, gF1, testPi, gF2);
+	
 	if(!loopoverall)
 	{
 		FindPeak(cangle,spr, prtangle);
@@ -795,24 +820,40 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 		par3 = fEvent->GetTest1();
 
 		prt_normalize(hLnDiffP,hLnDiffPi);
+		prt_normalize(oldLnP,oldLnPi);
+		
 		hLnDiffP->SetLineColor(2);
+		oldLnP->SetLineColor(2);
 
 		TF1 *ff;
-		Double_t m1,m2,s1,s2; 
+		Double_t m1,m2,s1,s2;
+		Double_t om1,om2,os1,os2;
 		if(hLnDiffP->GetEntries()>10){
 			hLnDiffP->Fit("gaus","S");
 			ff = hLnDiffP->GetFunction("gaus");
 			m1=ff->GetParameter(1);
 			s1=ff->GetParameter(2);
+
+			oldLnP->Fit("gaus","S");
+			ff = oldLnP->GetFunction("gaus");
+			om1=ff->GetParameter(1);
+			os1=ff->GetParameter(2);
 		}
 		if(hLnDiffPi->GetEntries()>10){
 			hLnDiffPi->Fit("gaus","S");
 			ff = hLnDiffPi->GetFunction("gaus");
 			m2=ff->GetParameter(1);
 			s2=ff->GetParameter(2);
+
+			oldLnPi->Fit("gaus","S");
+			ff = oldLnPi->GetFunction("gaus");
+			om2=ff->GetParameter(1);
+			os2=ff->GetParameter(2);
 		}
-		separation = (fabs(m2-m1))/(0.5*(s1+s2));
-		std::cout<<"separation "<< separation <<std::endl;
+		separation    = (fabs(m2-m1))/(0.5*(s1+s2));
+		oldseparation = (fabs(om2-om1))/(0.5*(os1+os2));
+		std::cout<<"separation     "<< separation <<std::endl;
+		std::cout<<"old separation "<< oldseparation <<std::endl;
 		
 		tree.Fill();
 		//tree.Print();
@@ -860,17 +901,24 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	cout << "TRIGGER 2 EVENTS  " << trig2 << endl;
 	cout << "COINCIDENCE EVENTS " << trig12 << endl;
 	/*fHist0->Write();
-	fHist1->Write();
-	fHist2->Write();
-	fHist3->Write();
-	fHist4->Write();
-	fHist5->Write();*/
+	  fHist1->Write();
+	  fHist2->Write();
+	  fHist3->Write();
+	  fHist4->Write();
+	  fHist5->Write();*/
 	//aSpreadP->Write();
 	//aSpreadPi->Write();
+
+	
+
 	hLnDiffP->SetName("Psep");
 	hLnDiffP->Write();
 	hLnDiffPi->SetName("Pisep");
 	hLnDiffPi->Write();
+
+	oldLnP->SetName("oldPsep");
+	oldLnPi->SetName("oldPisep");
+
 	file.Remove(eRecoP); // don't write these to file
 	file.Remove(eRecoPi);
 	file.Write();

@@ -66,8 +66,13 @@ void PrtPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent){
     G4ThreeVector vec(0,0,1);
     vec.setTheta(acos(G4UniformRand()));
     vec.setPhi(2*M_PI*G4UniformRand());
+	//    vec.rotateY(-M_PI/2.);
+
+	// to see multiple photons all hitting one pixel
+	// all with only 1 bottom reflection
+    //vec.setTheta(M_PI/10 + G4UniformRand()/50);
+	//vec.setPhi(999*M_PI/1000);//+G4UniformRand()/50);
     
-    //    vec.rotateY(-M_PI/2.);
     fParticleGun->SetParticleMomentumDirection(vec);
   }
   if(PrtManager::Instance()->GetRunType() == 5){ // calibration light
@@ -92,7 +97,7 @@ void PrtPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent){
     G4double angle = -G4UniformRand()*M_PI;
     G4ThreeVector vec(0,0,1);
     //vec.setTheta(M_PI/2.+angle);
-    ///vec.setTheta(acos(G4UniformRand()));
+    //vec.setTheta(acos(G4UniformRand()));
     //vec.setPhi(2*M_PI*G4UniformRand());
     
     vec.rotateY(-M_PI/2.);

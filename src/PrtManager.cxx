@@ -13,6 +13,7 @@ PrtManager::PrtManager(G4String outfile, G4int runtype){
   fOutName = filename; 
   fOutName = fOutName.Remove(fOutName.Last('.'));
   fRunType = runtype;
+  fMcpCorr = true;
   
   if(fRunType!=2) fRootFile = new TFile(filename,"RECREATE");
 

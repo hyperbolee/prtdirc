@@ -14,7 +14,7 @@
 # Written by Lee Allison, March 3, 2016
 
 # default values for ALL THE THINGS
-cores=4
+cores=3
 lensid=3
 lensnm=3CS
 study=151
@@ -83,7 +83,7 @@ while true; do
 			  158 ) lensnm=3CS; lensid=3 ;;
 			  154 ) lensnm=AGL; lensid=4 ;;
 			  160 ) lensnm=3CS; lensid=3; momentum=5;;
-			  152 ) lensnm=NON; lensid=0; radiator=;;
+			  152 ) lensnm=NON; lensid=0 ;;
 			  * ) echo "Wrong lens option";
 				  showHelp;
 				  exit 0;;
@@ -178,6 +178,7 @@ wait
 
 printf "\n"
 
+# to run without mcp angle correction remove "-mcp 1"
 if [ ${reco} = true ]
 then
 	statusline="Sim Reco"
@@ -190,7 +191,7 @@ then
 		#if [ -f ${lutname}.root ]
 		#then
 			# make full reco if LUT exists
-			#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${runname} -o ${recname}.root >> /dev/null &
+			#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}.root -i ${runname} -o ${recname}.root -mcp 1 >> /dev/null &
 		#fi
 		#waitForMe ${cores} # hold your horses!
 
@@ -200,7 +201,7 @@ then
 			# reconstruct twice the events cause you
 			# have both pions and protons
 			recname=${path}/reco/cs/reco_${lensnm}_${angle}
-			./prtdirc -s 2 -t1 5 -e $((2 * ${events})) -u ${lutname}_cs_avr.root -i ${runname} -o ${recname}_cs_avr.root >> /dev/null &
+			./prtdirc -s 2 -t1 5 -e $((2 * ${events})) -u ${lutname}_cs_avr.root -i ${runname} -o ${recname}_cs_avr.root -mcp 1 >> /dev/null &
 		fi
 		waitForMe ${cores} # hold your horses!
 
@@ -208,7 +209,7 @@ then
 		#then
 			# make averaged reco if LUT exists
 			#recname=${path}/reco/avr/reco_${lensnm}_${angle}
-			#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${runname} -o ${recname}_avr.root >> /dev/null &
+			#./prtdirc -s 2 -t1 5 -e ${events} -u ${lutname}_avr.root -i ${runname} -o ${recname}_avr.root -mcp 1 >> /dev/null &
 		#fi
 		#waitForMe ${cores} # hold your horses!
 

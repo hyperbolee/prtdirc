@@ -123,6 +123,8 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
 	const G4Event* currentEvent = fRM->GetCurrentEvent();
 	G4HCofThisEvent* HCofEvent = currentEvent->GetHCofThisEvent();
 	PrtPrizmHitsCollection* prizmCol = (PrtPrizmHitsCollection*)(HCofEvent->GetHC(collectionID));
+
+	
  
 	Double_t pathId = 0;
 	Int_t refl=0;
@@ -141,6 +143,7 @@ G4bool PrtPixelSD::ProcessHits(G4Step* step, G4TouchableHistory* hist){
 
 			refl++;
 			if(refId>0) pathId = 10*pathId + refId; //+= norm*1000*refl;
+
 		}
 	}
 

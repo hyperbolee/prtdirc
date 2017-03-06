@@ -4,81 +4,37 @@
 // of processed data file
 //
 // Lee Allison - Dec. 23 2015
+// Updated - Dec. 8 2016
 
-#include "../../prttools/prttools.C"
-#include "constants.h"
+#include "../drawing.C"
+// #include "constants.h"
 
-void drawFish(TString infile="../build/reco_spr.root", int save = 0)
+void drawFish(TString infile="../build/reco_spr.root", bool sim = 0, int study = 151)
 {
-	int mcpid(0), pixid(0), lens(0);
-	double angle(0);
+	double track(0);
 	
 	// define file, trees, and variables
-	TFile *f = TFile::Open(infile);
-	TTree *h = f->Get("hits");
-	TTree *d = f->Get("dirc");
+	TFile *file = TFile::Open(infile);
+	TTree *hits = file->Get("hits");
+	TTree *dirc = file->Get("dirc");
+	
+	dirc->SetBranchAddress("theta",&track);
+	dirc->GetEntry(0);
 
-	h->SetBranchAddress("mcp",&mcpid);
-	h->SetBranchAddress("pix",&pixid);
-	d->SetBranchAddress("lens",&lens);
-	d->SetBranchAddress("theta",&angle);
-	d->GetEntry(0);
+	// define useful strings
+	TString type = sim ? "sim" : "data";
+	TString name = Form("fish_%s_%d_%.2f",type.Data(),study,track);
 
-	// make counter histograms for cut
-	// TODO: only do this part for beam data
-	//       add event type to dirc tree and test that
-	char *selection = Form("PID>1000");
-	//tof1Cut(h,selection);
-	//tof2Cut(h,selection);
-	//trigCut(h,selection);
-	cout << "data selection:\t" << selection << endl;
-    
-	TTreeFormula* tform 
-		= new TTreeFormula("tree selection",selection,h);
+	// make detector plane, draw, and save
+	detectorPlane fish("");
+	fish = drawFishMCP(hits);
+	fish.SetDesc(name);
+	fish.Print("fish/"+name+".png");
+	fish.Close();
 
-	// initialize pad, set color scale, and fill fish
-	initDigi();
-	SetRootPalette(1);
-	int badC(0);
-	cout << h->GetEntries() << endl;
-	//for (Int_t ientry=0; ientry<40; ientry++)
-	for (Int_t ientry=0; ientry<h->GetEntries(); ientry++)
-	{
-		//cout << "da fuck???" << endl;
-		h->GetEntry(ientry);
-		/*if(tform->EvalInstance()==0) // skip if "bad" entry
-		{
-			badC++;
-			continue;
-			}*/
-	    //cout << "filling hist" << endl;
-	    fhDigi[mcpid]->Fill(pixid%8, pixid/8);
-	}
-	//cout << "percent cut:\t" << 100*double(badC)/h->GetEntries() << endl;
-	drawDigi("m,p,v\n",3);
-	cDigi->cd();
-	(new TPaletteAxis(0.90,0.1,0.94,0.90,fhDigi[0]))->Draw();
-
-	//if(save)
-	//cDigi->Print(Form("fish/fish_sim_%d_%.1f.png",lens,angle));
-
-	// draw and save each mcp individually
-	/*
-	drawDigi("m,p,v\n",3,-1,-1);
-	for(int mcp=0; mcp<15; mcp++)
-	{
-		TCanvas *canv = new TCanvas();
-		canv->cd();
-
-		fhDigi[mcp]->Draw("colz");
-		//canv->Print(Form("fish/fish_sim_%d_%.1f_mcp%d.png",
-						 lens,angle,mcp));
-
-		canv->Delete();
-	}
-
-	TCanvas *canv = new TCanvas();
-	fhDigi[0]->Draw("colz");
-	h->Draw("time","","same");
-	*/
+	//file->Close();
+	
+	delete hits;
+	delete dirc;
+	delete file;
 }
