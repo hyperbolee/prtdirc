@@ -71,14 +71,15 @@ void createPDFs_2()
 
 		int entries = ch->GetEntries();
 		double track = fEvent->GetAngle();
-		if(abs(track-130)>0.01) continue;
+		if(abs(track-20)>0.01) continue;
 		
-		// int nprot = ch->GetEntries("fParticle>1000");
-		// int npion = ch->GetEntries("fParticle<1000");
+		//int totprot = ch->GetEntries("fParticle>1000");
+		//int totpion = ch->GetEntries("fParticle<1000");
 
 		cout << "Total entries: " << entries << endl;
 
-		int nprot(0), npion(0);
+		int nprot(0), npion(0); // num tracks
+		int tprot(0), tpion(0); // num hits
 		
 		// initialize histograms
 		for(int mcp=0; mcp<nmcp; mcp++)
@@ -103,6 +104,9 @@ void createPDFs_2()
 		// loop over events and fill histograms
 		for(int entry=0; entry<entries; entry++)
 		{
+			if(npion>=75000) continue;
+			if(nprot>=75000) continue;
+			
 			ch->GetEntry(entry);
 			int hits = fEvent->GetHitSize();
 			int pid  = fEvent->GetParticle();
@@ -126,8 +130,8 @@ void createPDFs_2()
 			if(!t1 || !t2) continue;
 
 			// increment particle numbers
-			// if(pid==211)  npion++;
-			// if(pid==2212) nprot++;
+			if(pid==211)  npion++;
+			if(pid==2212) nprot++;
 			
 			for(int hit=0; hit<hits; hit++)
 			{
@@ -138,30 +142,67 @@ void createPDFs_2()
 				int pix = fHit.GetPixelId()-1;
 				double time = fHit.GetLeadTime();
 
-				// time cuts
-				if(track<=80)
-					if(time<11 || time>35) continue;
-				
-				if(track>=95)
-					if(time<3 || time>20) continue;
+				// time cut
+				if(time<0 || time>40)
+					continue;
 
-				if(pid==211)  hpion[count][mcp][pix]->Fill(time);
-				if(pid==2212) hprot[count][mcp][pix]->Fill(time);
+				if(pid==211)
+				{
+					tpion++;
+					hpion[count][mcp][pix]->Fill(time);
+				}
+				if(pid==2212)
+				{
+					tprot++;
+					hprot[count][mcp][pix]->Fill(time);
+				}
 
 				
 			}
 		}
 
-		cout << endl << endl;
+		cout << endl;
+		cout << "nprot " << nprot << endl;
+		cout << "npion " << npion << endl;
+		cout << "tprot " << tprot << endl;
+		cout << "tpion " << tpion << endl;
 
-		// for(int mcp=0; mcp<nmcp; mcp++)
-		// {
-		// 	for(int pix=0; pix<npix; pix++)
-		// 	{
-		// 		hprot[count][mcp][pix]->Scale(double(1./nprot));
-		// 		hpion[count][mcp][pix]->Scale(double(1./npion));
-		// 	}
-		// }
+		for(int mcp=0; mcp<nmcp; mcp++)
+		{
+			for(int pix=0; pix<npix; pix++)
+			{
+				// norm 1
+				//double sProt = 1./nprot;
+				//double sPion = 1./npion;
+				
+				// norm 2
+				//double sProt = double(hprot[count][mcp][pix]->GetEntries())/nprot;
+				//double sPion = double(hpion[count][mcp][pix]->GetEntries())/npion;
+
+				// norm 3
+				//double sProt = double(hprot[count][mcp][pix]->GetEntries())/tprot;
+				//double sPion = double(hpion[count][mcp][pix]->GetEntries())/tpion;
+
+				// norm 4
+				//double sProt = 1./tprot;
+				//double sPion = 1./tpion;
+
+				// norm 5
+				double sProt = 1.;
+				double sPion = 1.;
+
+				
+								
+				hprot[count][mcp][pix]->Scale(sProt);
+				hpion[count][mcp][pix]->Scale(sPion);
+
+				// hprot[count][mcp][pix]->Smooth(1);
+				// hpion[count][mcp][pix]->Smooth(1);
+
+				hprot[count][mcp][pix]->SetLineColor(kBlue);
+				hpion[count][mcp][pix]->SetLineColor(kRed);
+			}
+		}
 				
 		count++;
 		//if(count > 2) break; // testing

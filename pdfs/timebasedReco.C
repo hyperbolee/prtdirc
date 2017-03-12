@@ -26,6 +26,7 @@
 #include "TSystemDirectory.h"
 #include "TSystemFile.h"
 #include "TTree.h"
+#include "TMarker.h"
 
 // function to find intersection of
 // proton and pion distributions
@@ -58,7 +59,7 @@ void timebasedReco(TString infile)
 	data->SetBranchAddress("PrtEvent",&fEvent);
 	data->GetEntry(0);
 	track = fEvent->GetAngle();
-	entries = data->GetEntries();
+	entries = 20000;///data->GetEntries();
 
 	//if(entries>10000) entries = 10000;
 
@@ -70,7 +71,8 @@ void timebasedReco(TString infile)
 		int hits = fEvent->GetHitSize();
 		pid = fEvent->GetParticle();
 		simulation = fEvent->GetType();
-		//cout << fEvent->GetMomentum() << endl;
+
+		cout << Form("\rProcessing Event %d",entry) << flush;
 
 		if(!simulation)
 		{
@@ -108,6 +110,7 @@ void timebasedReco(TString infile)
 
 			double f1 = tmp1->GetBinContent(tmp1->FindBin(time));
 			double f2 = tmp2->GetBinContent(tmp2->FindBin(time));
+			
 			if(f1) sum1 += TMath::Log(f1);
 			if(f2) sum2 += TMath::Log(f2);
 		}
@@ -127,8 +130,10 @@ void timebasedReco(TString infile)
 
 	double max = maxPi>maxPr ? maxPi : maxPr;
 
-	diffPi->Scale(max/maxPi);
-	diffPr->Scale(max/maxPr);
+	//diffPi->Scale(max/maxPi);
+	//diffPr->Scale(max/maxPr);
+	diffPi->GetYaxis()->SetRangeUser(0,1.1*max);
+	diffPr->GetYaxis()->SetRangeUser(0,1.1*max);
 
 	// fit and get separation power
 	diffPi->Fit("gaus","Q");
