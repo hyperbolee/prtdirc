@@ -38,8 +38,8 @@ TH2F*  fHist3 = new TH2F("time3",";calculated time [ns];measured time [ns]", 500
 TH2F*  fHist4 = new TH2F("time4",";#theta_{c}sin(#varphi_{c});#theta_{c}cos(#varphi_{c}", 100,-1,1, 100,-1,1);
 TH2F*  fHist5 = new TH2F("time5",";#theta_{c}sin(#varphi_{c});#theta_{c}cos(#varphi_{c}", 100,-1,1, 100,-1,1);
 
-TH1F *hLnDiffP = new TH1F("hLnDiffP",  ";ln L(p) - ln L(#pi);entries [#]",334,-50,50);
-TH1F *hLnDiffPi = new TH1F("hLnDiffPi",";ln L(p) - ln L(#pi);entries [#]",334,-50,50);
+TH1F *hLnDiffP = new TH1F("hLnDiffP",  ";ln L(p) - ln L(#pi);entries [#]",400,-50,50);
+TH1F *hLnDiffPi = new TH1F("hLnDiffPi",";ln L(p) - ln L(#pi);entries [#]",400,-50,50);
 
 TF1 *gF1 = new TF1("gaus0","[0]*exp(-0.5*((x-[1])/[2])*(x-[1])/[2])",0.7,0.9);
 TF1 *gF2= new TF1("gaus0","[0]*exp(-0.5*((x-[1])/[2])*(x-[1])/[2])",0.7,0.9);
@@ -159,7 +159,7 @@ int getTOFring( int chan )
 //-------------- Loop over tracks ------------------------------------------
 void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	cout << "Start Reco run" << endl;
-
+	
 	TVector3 dird, dir, momInBar(0,0,1),posInBar,cz;
 	Double_t cangle,spr,tangle,boxPhi,weight,evtime,bartime, lenz,dirz,luttheta, barHitTime, hitTime;
 	Int_t pdgcode, evpointcount=0;
@@ -346,7 +346,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 
 	gROOT->SetBatch(1);
 	for (ievent=start; ievent<end; ievent++)
-	{
+	{			
 		fChain->GetEntry(ievent);
 		nHits = fEvent->GetHitSize();
 		eRecoP->Reset();
