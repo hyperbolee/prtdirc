@@ -5,11 +5,13 @@
 *.so
 *.o
 *.d
+*_cxx*
 AutoDict*
 *.root
 *.png
 *.tsv
 *.ods
+*.svg
 *~
 \#*\#
 */C/*.C
