@@ -36,7 +36,7 @@ double intersect(double *x, double*par) {
    return TMath::Abs(prFit->EvalPar(x,par) - piFit->EvalPar(x,par));
 }
 
-void timebasedReco(TString infile)
+void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 {
 	PrtEvent *fEvent;
 	PrtHit    fHit;
@@ -53,13 +53,13 @@ void timebasedReco(TString infile)
 	TH1D *tmp2; // for holding prot PDF
 	TH1D *diffPr = new TH1D("diffPr","diffPr;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
 	TH1D *diffPi = new TH1D("diffPi","diffPi;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
-	TFile *PDF = TFile::Open("pdf_hists.root");
+	TFile *PDF = TFile::Open(Form("pdf_norm%d_smooth%d.root",normId,smooth));
 	TChain *data = new TChain("data");
 	data->Add(infile);
 	data->SetBranchAddress("PrtEvent",&fEvent);
 	data->GetEntry(0);
 	track = fEvent->GetAngle();
-	entries = 20000;///data->GetEntries();
+	entries = data->GetEntries()>40000 ? 40000 : data->GetEntries();
 
 	//if(entries>10000) entries = 10000;
 
@@ -124,7 +124,7 @@ void timebasedReco(TString infile)
 		}
 	}
 
-	// normalize maxima
+	// set histograms to same Y-axis
 	double maxPi = diffPi->GetMaximum();
 	double maxPr = diffPr->GetMaximum();
 
@@ -160,14 +160,19 @@ void timebasedReco(TString infile)
 	// draw all the things
 	diffPi->SetTitle(Form("%s seperation %.4f#sigma, intersect %.2f",simulation?"sim":"data",separation,crossing));
 	diffPi->SetLineColor(kRed);
+
+	TCanvas *canv = new TCanvas();
+	canv->cd();
 	diffPi->Draw();
 	diffPr->Draw("same");
-
+	
 	TMarker *m = new TMarker(crossing,prFit->Eval(crossing),24);
 	m->SetMarkerColor(kPink);
 	m->SetMarkerSize(3);
 	m->Draw();
-	
+
+	TString evtype = simulation ? "sim" : "data";
+	canv->Print(Form("separation_%s_norm%d_smooth_%d.png",evtype.Data(),normId,smooth));
 
 	return;
 }

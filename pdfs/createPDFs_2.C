@@ -26,16 +26,18 @@
 #include "TSystemFile.h"
 #include "TTree.h"
 
+#include <map>
+
 // #include "../../prttools/prttools.C"
 
 
-void createPDFs_2()
+void createPDFs_2(int normId = 1, int smooth = 0)
 {
 	// let's see what happens
 	//gROOT->ProcessLine(".L ../src/PrtHit.cxx+");
 	//gROOT->ProcessLine(".L ../src/PrtEvent.cxx+");
 	
-	TString datadir = "../data/152/";//"/home/lee/DIRC/prtdirc/pdfs/";
+	TString datadir = "../data/151/";//"/home/lee/DIRC/prtdirc/pdfs/";
 	TSystemDirectory dir(datadir,datadir);
 	TList *files = dir.GetListOfFiles();
 	files->Sort();
@@ -46,7 +48,7 @@ void createPDFs_2()
 	// histograms for each pixel of each
 	// mcp for each file and partile
 	static const int nmcp(15), npix(64), nfiles(30);
-	TFile *outfile = new TFile("pdf_hists.root","recreate");
+	TFile *outfile = new TFile(Form("pdf_norm%d_smooth%d.root",normId,smooth),"recreate");
 	TH1D *hprot[nfiles][nmcp][npix];
 	TH1D *hpion[nfiles][nmcp][npix];
 
@@ -62,7 +64,7 @@ void createPDFs_2()
 		fname = file->GetName();
 		if( file->IsDirectory() || !fname.EndsWith("C.root") )
 			continue; // don't process directories or non-root files
-		cout << "Processing " << fname << endl;
+		
 		
 		TChain *ch = new TChain("data");
 		ch->Add(datadir+fname);
@@ -71,7 +73,9 @@ void createPDFs_2()
 
 		int entries = ch->GetEntries();
 		double track = fEvent->GetAngle();
-		if(abs(track-20)>0.01) continue;
+		if(abs(track-125)>0.01) continue;
+
+		cout << "Processing " << fname << endl;
 		
 		//int totprot = ch->GetEntries("fParticle>1000");
 		//int totpion = ch->GetEntries("fParticle<1000");
@@ -104,8 +108,8 @@ void createPDFs_2()
 		// loop over events and fill histograms
 		for(int entry=0; entry<entries; entry++)
 		{
-			if(npion>=75000) continue;
-			if(nprot>=75000) continue;
+			//if(npion>=75000) continue;
+			//if(nprot>=75000) continue;
 			
 			ch->GetEntry(entry);
 			int hits = fEvent->GetHitSize();
@@ -171,33 +175,44 @@ void createPDFs_2()
 		{
 			for(int pix=0; pix<npix; pix++)
 			{
-				// norm 1
-				//double sProt = 1./nprot;
-				//double sPion = 1./npion;
-				
-				// norm 2
-				//double sProt = double(hprot[count][mcp][pix]->GetEntries())/nprot;
-				//double sPion = double(hpion[count][mcp][pix]->GetEntries())/npion;
+				double sProt(1);
+				double sPion(1);
+				switch(normId)
+				{
+					case 0:
+						sProt = 1.;
+						sPion = 1.;
+						break;
+						
+					case 1:
+						sProt = 1./nprot;
+						sPion = 1./npion;
+						break;
 
-				// norm 3
-				//double sProt = double(hprot[count][mcp][pix]->GetEntries())/tprot;
-				//double sPion = double(hpion[count][mcp][pix]->GetEntries())/tpion;
+					case 2:
+						sProt = double(hprot[count][mcp][pix]->GetEntries())/nprot;
+						sPion = double(hpion[count][mcp][pix]->GetEntries())/npion;
+						break;
 
-				// norm 4
-				//double sProt = 1./tprot;
-				//double sPion = 1./tpion;
+					case 3:
+						sProt = double(hprot[count][mcp][pix]->GetEntries())/tprot;
+						sPion = double(hpion[count][mcp][pix]->GetEntries())/tpion;
+						break;
 
-				// norm 5
-				double sProt = 1.;
-				double sPion = 1.;
-
-				
+					case 4:
+						sProt = 1./tprot;
+						sPion = 1./tpion;
+						break;
+				}				
 								
 				hprot[count][mcp][pix]->Scale(sProt);
 				hpion[count][mcp][pix]->Scale(sPion);
 
-				// hprot[count][mcp][pix]->Smooth(1);
-				// hpion[count][mcp][pix]->Smooth(1);
+				if(smooth)
+				{
+					hprot[count][mcp][pix]->Smooth(smooth);
+					hpion[count][mcp][pix]->Smooth(smooth);
+				}
 
 				hprot[count][mcp][pix]->SetLineColor(kBlue);
 				hpion[count][mcp][pix]->SetLineColor(kRed);
