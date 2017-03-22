@@ -31,11 +31,13 @@
 // #include "../../prttools/prttools.C"
 
 
-void createPDFs_2(int normId = 1, int smooth = 0)
+void createPDFs_2(int normId = 1, int smooth = 0, int sigma = 3)
 {
 	// let's see what happens
 	//gROOT->ProcessLine(".L ../src/PrtHit.cxx+");
 	//gROOT->ProcessLine(".L ../src/PrtEvent.cxx+");
+
+	gErrorIgnoreLevel = kWarning; // ignore 'Info in...' messages
 	
 	TString datadir = "../data/151/";//"/home/lee/DIRC/prtdirc/pdfs/";
 	TSystemDirectory dir(datadir,datadir);
@@ -49,8 +51,8 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 	// mcp for each file and partile
 	static const int nmcp(15), npix(64), nfiles(30);
 	TFile *outfile = new TFile(Form("pdf_norm%d_smooth%d.root",normId,smooth),"recreate");
-	TH1D *hprot[nfiles][nmcp][npix];
-	TH1D *hpion[nfiles][nmcp][npix];
+	TH1F *hprot [nfiles][nmcp][npix];
+	TH1F *hpion [nfiles][nmcp][npix];
 
 	//TCanvas *canv = new TCanvas();
 	//canv->cd();
@@ -98,8 +100,8 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 				TString piname = Form(name.Data(),211,track, mcp,pix);
 
 				// define new histograms for pion and proton
-				hprot[count][mcp][pix] = new TH1D(prtname,prtname,1000,0,50);
-				hpion[count][mcp][pix] = new TH1D(piname,piname,1000,0,50);
+				hprot[count][mcp][pix] = new TH1F(prtname,prtname,1000,0,100);
+				hpion[count][mcp][pix] = new TH1F(piname,piname,1000,0,100);
 			}
 		}
 
@@ -224,6 +226,12 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 
 				hprot[count][mcp][pix]->SetLineColor(kBlue);
 				hpion[count][mcp][pix]->SetLineColor(kRed);
+
+				if(sigma>0)
+				{
+					hprot[count][mcp][pix]->Rebin(int(sigma));
+					hpion[count][mcp][pix]->Rebin(int(sigma));
+				}
 
 				// write outfile and clean up memory
 				hprot[count][mcp][pix]->Write();

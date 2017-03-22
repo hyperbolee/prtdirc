@@ -16,6 +16,7 @@
 #include "TFile.h"
 #include "TGraph.h"
 #include "TH1D.h"
+#include "TH1F.h"
 #include "TLegend.h"
 #include "TList.h"
 #include "TROOT.h"
@@ -38,12 +39,12 @@ double intersect(double *x, double*par) {
    return TMath::Abs(prFit->EvalPar(x,par) - piFit->EvalPar(x,par));
 }
 
-void timebasedReco(TString infile, int normId = 1, int smooth = 0)
+void timebasedReco(TString infile, int normId = 1, int smooth = 0, int sigma = 3)
 {
 	PrtEvent *fEvent;
 	PrtHit    fHit;
 
-	double track, time;
+	double track, time, noise(1e-5);
 	int mcp, pix, pid, entries, simulation(0);
 
 	TChain *data = new TChain("data");
@@ -52,15 +53,15 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	data->GetEntry(1);
 	track = fEvent->GetAngle();
 	
-	entries = data->GetEntries()>40000 ? 40000 : data->GetEntries();
+	entries = data->GetEntries()>4000 ? 4000 : data->GetEntries();
 	
 	// for reconstruction
 	TCanvas *canv = new TCanvas();
 	TGraph *tmp1;
 	TGraph *tmp2;
 	
-	TH1D *diffPr = new TH1D("diffPr","diffPr;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
-	TH1D *diffPi = new TH1D("diffPi","diffPi;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
+	TH1F *diffPr = new TH1F("diffPr","diffPr;ln L(p) - ln L(#pi);entries [#]",220,-60,60);
+	TH1F *diffPi = new TH1F("diffPi","diffPi;ln L(p) - ln L(#pi);entries [#]",220,-60,60);
 	TFile *PDF = TFile::Open(Form("pdf_norm%d_smooth%d.root",normId,smooth));
 
 
@@ -119,17 +120,25 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 			if(time<0 || time>40)
 				continue;
 
-			tmp1 = new TGraph((TH1D*)PDF->Get(Form("pdf_211_%.2f_mcp%d_pix%d",track,mcp,pix)));
-			tmp2 = new TGraph((TH1D*)PDF->Get(Form("pdf_2212_%.2f_mcp%d_pix%d",track,mcp,pix)));
+			// TH1D *thist1 = (TH1D*)PDF->Get(Form("pdf_211_%.2f_mcp%d_pix%d",track,mcp,pix));
+			// TH1D *thist2 = (TH1D*)PDF->Get(Form("pdf_2212_%.2f_mcp%d_pix%d",track,mcp,pix));
+			// tmp1 = new TGraph(thist1->Rebin(2));
+			// tmp2 = new TGraph(thist2->Rebin(2));
+
+			tmp1 = new TGraph((TH1F*)PDF->Get(Form("pdf_211_%.2f_mcp%d_pix%d",track,mcp,pix)));
+			tmp2 = new TGraph((TH1F*)PDF->Get(Form("pdf_2212_%.2f_mcp%d_pix%d",track,mcp,pix)));
 
 			double f1 = tmp1->Eval(time);//tmp1->GetBinContent(tmp1->FindBin(time));
 			double f2 = tmp2->Eval(time);//tmp2->GetBinContent(tmp2->FindBin(time));
 			
-			if(f1>0) sum1 += TMath::Log(f1);
-			if(f2>0) sum2 += TMath::Log(f2);
+			if(f1>0) sum1 += TMath::Log(f1+noise);
+			if(f2>0) sum2 += TMath::Log(f2+noise);
 
 			tmp1->Delete();
 			tmp2->Delete();
+
+			// thist1->Delete();
+			// thist2->Delete();
 
 			goodHits++;
 		}
@@ -172,7 +181,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	double separation = 2*fabs(meanPi-meanPr)/(sigmaPi+sigmaPr);
 	double crossing   = diff->GetMinimumX(meanPr,meanPi);
 
-	cout << "\nprot:\t" << nprot << endl;
+	cout << "\nnprot:\t" << nprot << endl;
 	cout << "npion:\t" << npion << endl;
 	cout << "SEPARATION:\t" << separation << " stdev" << endl;
 	cout << "CROSSING:\t" << crossing << endl;
@@ -195,7 +204,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	if(true)
 	{
 		TString evtype = simulation ? "sim" : "data";
-		canv->Print(Form("separation_%s_norm%d_smooth_%d.C",evtype.Data(),normId,smooth));
+		canv->Print(Form("separation_%s_norm%d_smooth_%d.png",evtype.Data(),normId,smooth));
 	}
 	
 	diffPr->Delete();
