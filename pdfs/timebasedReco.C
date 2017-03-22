@@ -28,6 +28,8 @@
 #include "TTree.h"
 #include "TMarker.h"
 
+#include <map>
+
 // function to find intersection of
 // proton and pion distributions
 TF1 *prFit;
@@ -41,43 +43,44 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	PrtEvent *fEvent;
 	PrtHit    fHit;
 
-	double track, time, sum, sum1, sum2;
-	int mcp, pix, pid, entries, simulation;
-	
-	// for output
-	/*
-	 */
+	double track, time;
+	int mcp, pix, pid, entries, simulation(0);
 
-	// for reconstruction
-	TH1D *tmp1; // for holding pion PDF
-	TH1D *tmp2; // for holding prot PDF
-	TH1D *diffPr = new TH1D("diffPr","diffPr;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
-	TH1D *diffPi = new TH1D("diffPi","diffPi;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
-	TFile *PDF = TFile::Open(Form("pdf_norm%d_smooth%d.root",normId,smooth));
 	TChain *data = new TChain("data");
 	data->Add(infile);
 	data->SetBranchAddress("PrtEvent",&fEvent);
-	data->GetEntry(0);
+	data->GetEntry(1);
 	track = fEvent->GetAngle();
+	
 	entries = data->GetEntries()>40000 ? 40000 : data->GetEntries();
+	
+	// for reconstruction
+	TCanvas *canv = new TCanvas();
+	TGraph *tmp1;
+	TGraph *tmp2;
+	
+	TH1D *diffPr = new TH1D("diffPr","diffPr;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
+	TH1D *diffPi = new TH1D("diffPi","diffPi;ln L(p) - ln L(#pi);entries [#]",334,-50,50);
+	TFile *PDF = TFile::Open(Form("pdf_norm%d_smooth%d.root",normId,smooth));
+
 
 	//if(entries>10000) entries = 10000;
 
 	int nprot(0), npion(0);
-	
 	for(int entry=0; entry<entries; entry++)
 	{
 		data->GetEntry(entry);
 		int hits = fEvent->GetHitSize();
 		pid = fEvent->GetParticle();
 		simulation = fEvent->GetType();
+		
+		int goodHits = 0;
 
 		cout << Form("\rProcessing Event %d",entry) << flush;
-
 		if(!simulation)
 		{
 			bool t1(false), t2(false);
-
+			
 			// loop through hits first to make sure triggers fired
 			for(int hit=0; hit<hits; hit++)
 			{
@@ -96,8 +99,11 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 		if(pid==211)  npion++;
 		if(pid==2212) nprot++;
 
-		sum = sum1 = sum2 = 0;
+		double sum(0), sum1(0), sum2(0);
 
+		//int multiHit[15][64] = {0};
+		map<int, map<int,int> > multiHit;
+		
 		for(int hit=0; hit<hits; hit++)
 		{
 			fHit = fEvent->GetHit(hit);
@@ -105,16 +111,30 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 			pix = fHit.GetPixelId()-1;
 			time = fHit.GetLeadTime();
 
-			tmp1 = (TH1D*)PDF->Get(Form("pdf_211_%.2f_mcp%d_pix%d",track,mcp,pix));
-			tmp2 = (TH1D*)PDF->Get(Form("pdf_2212_%.2f_mcp%d_pix%d",track,mcp,pix));
+			// skip multiple hits in same channel
+			if(++multiHit[mcp][pix]>1)
+				continue;
 
-			double f1 = tmp1->GetBinContent(tmp1->FindBin(time));
-			double f2 = tmp2->GetBinContent(tmp2->FindBin(time));
+			// time cut
+			if(time<0 || time>40)
+				continue;
+
+			tmp1 = new TGraph((TH1D*)PDF->Get(Form("pdf_211_%.2f_mcp%d_pix%d",track,mcp,pix)));
+			tmp2 = new TGraph((TH1D*)PDF->Get(Form("pdf_2212_%.2f_mcp%d_pix%d",track,mcp,pix)));
+
+			double f1 = tmp1->Eval(time);//tmp1->GetBinContent(tmp1->FindBin(time));
+			double f2 = tmp2->Eval(time);//tmp2->GetBinContent(tmp2->FindBin(time));
 			
-			if(f1) sum1 += TMath::Log(f1);
-			if(f2) sum2 += TMath::Log(f2);
+			if(f1>0) sum1 += TMath::Log(f1);
+			if(f2>0) sum2 += TMath::Log(f2);
+
+			tmp1->Delete();
+			tmp2->Delete();
+
+			goodHits++;
 		}
 
+		if(goodHits<20) continue;
 		sum = sum1-sum2;
 		
 		if(sum)
@@ -152,7 +172,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	double separation = 2*fabs(meanPi-meanPr)/(sigmaPi+sigmaPr);
 	double crossing   = diff->GetMinimumX(meanPr,meanPi);
 
-	cout << "nprot:\t" << nprot << endl;
+	cout << "\nprot:\t" << nprot << endl;
 	cout << "npion:\t" << npion << endl;
 	cout << "SEPARATION:\t" << separation << " stdev" << endl;
 	cout << "CROSSING:\t" << crossing << endl;
@@ -161,7 +181,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	diffPi->SetTitle(Form("%s seperation %.4f#sigma, intersect %.2f",simulation?"sim":"data",separation,crossing));
 	diffPi->SetLineColor(kRed);
 
-	TCanvas *canv = new TCanvas();
+	
 	canv->cd();
 	diffPi->Draw();
 	diffPr->Draw("same");
@@ -170,9 +190,21 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0)
 	m->SetMarkerColor(kPink);
 	m->SetMarkerSize(3);
 	m->Draw();
+	canv->WaitPrimitive();
 
-	TString evtype = simulation ? "sim" : "data";
-	canv->Print(Form("separation_%s_norm%d_smooth_%d.png",evtype.Data(),normId,smooth));
+	if(true)
+	{
+		TString evtype = simulation ? "sim" : "data";
+		canv->Print(Form("separation_%s_norm%d_smooth_%d.C",evtype.Data(),normId,smooth));
+	}
+	
+	diffPr->Delete();
+	diffPi->Delete();
+	diff->Delete();
+	data->Delete();
+	m->Delete();
+	canv->Close();
+	canv->Delete();
 
 	return;
 }

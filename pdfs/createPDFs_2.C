@@ -44,7 +44,7 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 	TSystemFile *file;
 	TString fname;
 	TIter next(files);
-
+	
 	// histograms for each pixel of each
 	// mcp for each file and partile
 	static const int nmcp(15), npix(64), nfiles(30);
@@ -136,6 +136,9 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 			// increment particle numbers
 			if(pid==211)  npion++;
 			if(pid==2212) nprot++;
+
+			//int multiHit[15][64] = { 0 };
+			map<int, map<int,int> > multiHit;
 			
 			for(int hit=0; hit<hits; hit++)
 			{
@@ -145,6 +148,10 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 				int mcp = fHit.GetMcpId();
 				int pix = fHit.GetPixelId()-1;
 				double time = fHit.GetLeadTime();
+
+				// skip multiple hits in same channel
+				if(++multiHit[mcp][pix]>1)
+					continue;
 
 				// time cut
 				if(time<0 || time>40)
@@ -185,8 +192,8 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 						break;
 						
 					case 1:
-						sProt = 1./nprot;
-						sPion = 1./npion;
+						sProt = 1./double(nprot);
+						sPion = 1./double(npion);
 						break;
 
 					case 2:
@@ -200,11 +207,12 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 						break;
 
 					case 4:
-						sProt = 1./tprot;
-						sPion = 1./tpion;
+						sProt = 1./double(tprot);
+						sPion = 1./double(tpion);
 						break;
 				}				
-								
+
+				// normalize histograms and smooth
 				hprot[count][mcp][pix]->Scale(sProt);
 				hpion[count][mcp][pix]->Scale(sPion);
 
@@ -216,6 +224,13 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 
 				hprot[count][mcp][pix]->SetLineColor(kBlue);
 				hpion[count][mcp][pix]->SetLineColor(kRed);
+
+				// write outfile and clean up memory
+				hprot[count][mcp][pix]->Write();
+				hpion[count][mcp][pix]->Write();
+				
+				hprot[count][mcp][pix]->Delete();
+				hpion[count][mcp][pix]->Delete();
 			}
 		}
 				
@@ -226,5 +241,8 @@ void createPDFs_2(int normId = 1, int smooth = 0)
 	}
 	cout << endl << endl;
 
-	outfile->Write();
+	//outfile->Write();
+	outfile->Close();
+	outfile->Delete();
+	
 }
