@@ -53,7 +53,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0, int sigma = 3
 	data->GetEntry(1);
 	track = fEvent->GetAngle();
 	
-	entries = data->GetEntries()>4000 ? 4000 : data->GetEntries();
+	entries = data->GetEntries()>40000 ? 40000 : data->GetEntries();
 	
 	// for reconstruction
 	TCanvas *canv = new TCanvas();
@@ -97,6 +97,7 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0, int sigma = 3
 			if(!t1 || !t2) continue;
 		}
 
+		
 		if(pid==211)  npion++;
 		if(pid==2212) nprot++;
 
@@ -181,10 +182,16 @@ void timebasedReco(TString infile, int normId = 1, int smooth = 0, int sigma = 3
 	double separation = 2*fabs(meanPi-meanPr)/(sigmaPi+sigmaPr);
 	double crossing   = diff->GetMinimumX(meanPr,meanPi);
 
+	// get proton and pion misID
+	double prMissID = prFit->Integral(crossing,60)/prFit->Integral(-60,60);
+	double piMissID = piFit->Integral(-60,crossing)/piFit->Integral(-60,60);
+
 	cout << "\nnprot:\t" << nprot << endl;
 	cout << "npion:\t" << npion << endl;
 	cout << "SEPARATION:\t" << separation << " stdev" << endl;
 	cout << "CROSSING:\t" << crossing << endl;
+	cout << "PI MISSID:\t" << 100*piMissID << "%" << endl;
+	cout << "PR MISSID:\t" << 100*prMissID << "%" << endl;
 
 	// draw all the things
 	diffPi->SetTitle(Form("%s seperation %.4f#sigma, intersect %.2f",simulation?"sim":"data",separation,crossing));

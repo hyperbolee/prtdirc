@@ -75,7 +75,7 @@ void createPDFs_2(int normId = 1, int smooth = 0, int sigma = 3)
 
 		int entries = ch->GetEntries();
 		double track = fEvent->GetAngle();
-		if(abs(track-125)>0.01) continue;
+		if(abs(track-25)>0.01) continue;
 
 		cout << "Processing " << fname << endl;
 		
@@ -100,12 +100,41 @@ void createPDFs_2(int normId = 1, int smooth = 0, int sigma = 3)
 				TString piname = Form(name.Data(),211,track, mcp,pix);
 
 				// define new histograms for pion and proton
-				hprot[count][mcp][pix] = new TH1F(prtname,prtname,1000,0,100);
-				hpion[count][mcp][pix] = new TH1F(piname,piname,1000,0,100);
+				hprot[count][mcp][pix] = new TH1F(prtname,prtname,250,0,100);
+				hpion[count][mcp][pix] = new TH1F(piname,piname,250,0,100);
 			}
 		}
 
 		cout << endl << endl;
+
+		int prlim(0), pilim(0);
+		for(int entry=0; entry<entries; entry++)
+		{
+			ch->GetEntry(entry);
+			int hits = fEvent->GetHitSize();
+			int pid = fEvent->GetParticle();
+		
+			bool t1(false), t2(false);
+			
+			// loop through hits first to make sure triggers fired
+			for(int hit=0; hit<hits; hit++)
+			{
+				
+				fHit = fEvent->GetHit(hit);
+				int chan = fHit.GetChannel();
+
+				if(chan==1344) t1 = true; // trigger 1
+				if(chan==1346) t2 = true; // trigger 2
+			}
+
+			// skip events that didn't fire on both triggers
+			if(!t1 || !t2) continue;
+
+			if(pid==211)  pilim++;
+			if(pid==2212) prlim++;
+		}
+
+		int limit = prlim<=pilim ? prlim : pilim;
 
 		// loop over events and fill histograms
 		for(int entry=0; entry<entries; entry++)
@@ -135,7 +164,13 @@ void createPDFs_2(int normId = 1, int smooth = 0, int sigma = 3)
 			// skip events that didn't fire on both triggers
 			if(!t1 || !t2) continue;
 
-			// increment particle numbers
+			// check to make sure particle limit
+			// hasn't been reached yet
+			if(npion==limit && nprot==limit) break;
+			if(pid==211  && npion>=limit) continue;
+			if(pid==2212 && nprot>=limit) continue;
+
+			// increment species numbers
 			if(pid==211)  npion++;
 			if(pid==2212) nprot++;
 
@@ -175,6 +210,9 @@ void createPDFs_2(int normId = 1, int smooth = 0, int sigma = 3)
 		}
 
 		cout << endl;
+		cout << "prlim " << prlim << endl;
+		cout << "pilim " << pilim << endl;
+		cout << "limit " << limit << endl;
 		cout << "nprot " << nprot << endl;
 		cout << "npion " << npion << endl;
 		cout << "tprot " << tprot << endl;
