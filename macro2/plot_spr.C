@@ -25,6 +25,8 @@
 #include "TSystemFile.h"
 #include "TTree.h"
 
+#include "errors.h"
+
 void plot_spr( int study = 151, // select run
 			   int polrank = 1, // polynomial fit rank
 			   double range = 30) // +- fit range [mrad]
@@ -42,6 +44,7 @@ void plot_spr( int study = 151, // select run
 	// variables for output trees
 	int pid(0);
 	double track(0); // polar track angle
+	// double err_nph(0), err_spr(0), err_thc(0); // error per track angle
 	double sim_nph(0), data_nph(0); // photon yields
 	double sim_spr(0), data_spr(0); // fit SPR
 	double sim_mean(0), data_mean(0); // fit mean thetaC 
@@ -59,6 +62,7 @@ void plot_spr( int study = 151, // select run
 
 	// make branches for simulation tree
 	sim_tree->Branch("track",&track,"track/D");
+	
 	sim_tree->Branch("pid",&pid,"pid/I");
 	sim_tree->Branch("nph",&sim_nph,"sim_nph/D");
 	sim_tree->Branch("spr",&sim_spr,"sim_spr/D");

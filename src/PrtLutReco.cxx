@@ -199,7 +199,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	int vtrg1(0), vtrg2(0), vtrg12(0); // for veto counter
 	int enov1(0), enov12(0);
 
-	int simulation(0);
+	int simulation(0), tGeom(0);
 	
 	TFile file(outFile,"recreate");
 	TTree tree("dirc","SPR");
@@ -226,6 +226,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 	//tree.Branch("eveto12",&vtrg12,"vtrg12/I");
 	//tree.Branch("enov1",&enov1,"enov1/D");
 	//tree.Branch("enov12",&enov12,"enov12/D");
+	tree.Branch("geom",&tGeom,"tGeom/I"); // study ID
 	tree.Branch("cangle",&cangle,"cangle/D");
 	tree.Branch("separation",&separation,"separation/D");
 	tree.Branch("oldseparation",&oldseparation,"oldseparation/D");
@@ -364,6 +365,7 @@ void PrtLutReco::Run(Int_t start, Int_t end, Double_t shift){
 			lensID = fEvent->GetLens();
 			beam = fEvent->GetMomentum().Mag();
 			simulation = fEvent->GetType();
+			tGeom = fEvent->GetGeometry();
 
 			// simulation saves in units of eV
 			if(simulation) beam /= 1000;

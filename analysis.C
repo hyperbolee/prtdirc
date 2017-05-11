@@ -737,7 +737,9 @@ void getFitRangeSim(double track, int PID, double &lo, double &hi)
 	switch(PID)
 	{
 	case 211 : // pions
-
+		if(track == 140)
+			lo = 20;
+		
 		if(track == 130)
 			lo = 25;
 
